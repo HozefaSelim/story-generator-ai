@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\StoryController;
 use App\Http\Controllers\FileUploadController;
+use App\Http\Controllers\ProfileController;
 
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -14,21 +15,33 @@ Route::get('/how-it-works', [HomeController::class, 'howItWorks'])->name('how-it
 // Authentication routes (Laravel Breeze/Jetstream will add these)
 // Route::middleware(['auth'])->group(function () { ... });
 
-// Story routes (protected by auth middleware in controller)
-Route::resource('stories', StoryController::class);
-Route::post('/stories/{story}/generate', [StoryController::class, 'generate'])->name('stories.generate');
-Route::get('/stories/{story}/download-pdf', [StoryController::class, 'downloadPdf'])->name('stories.download-pdf');
-Route::get('/stories/{story}/download-video', [StoryController::class, 'downloadVideo'])->name('stories.download-video');
+// Story routes (protected by auth middleware)
+Route::middleware(['auth'])->group(function () {
+    Route::resource('stories', StoryController::class);
+    Route::post('/stories/{story}/generate', [StoryController::class, 'generate'])->name('stories.generate');
+    Route::get('/stories/{story}/download-pdf', [StoryController::class, 'downloadPdf'])->name('stories.download-pdf');
+    Route::get('/stories/{story}/download-video', [StoryController::class, 'downloadVideo'])->name('stories.download-video');
+});
 
-// File upload routes
-Route::get('/uploads', [FileUploadController::class, 'index'])->name('uploads.index');
-Route::get('/uploads/create', [FileUploadController::class, 'create'])->name('uploads.create');
-Route::post('/uploads/photo', [FileUploadController::class, 'uploadPhoto'])->name('uploads.photo');
-Route::delete('/uploads/{upload}', [FileUploadController::class, 'destroy'])->name('uploads.destroy');
+// File upload routes (protected by auth middleware)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/uploads', [FileUploadController::class, 'index'])->name('uploads.index');
+    Route::get('/uploads/create', [FileUploadController::class, 'create'])->name('uploads.create');
+    Route::post('/uploads/photo', [FileUploadController::class, 'uploadPhoto'])->name('uploads.photo');
+    Route::delete('/uploads/{upload}', [FileUploadController::class, 'destroy'])->name('uploads.destroy');
+});
 
 // Dashboard route
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
+    
+    // Profile routes
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+// Include authentication routes
+require __DIR__.'/auth.php';

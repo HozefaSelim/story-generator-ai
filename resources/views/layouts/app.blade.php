@@ -15,22 +15,25 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans antialiased">
-        <div class="min-h-screen bg-gray-100 dark:bg-gray-900">
-            @include('layouts.navigation')
+        <div class="min-h-screen bg-[var(--bg)] text-[var(--text)]">
+            <x-site-header />
 
-            <!-- Page Heading -->
-            @isset($header)
-                <header class="bg-white dark:bg-gray-800 shadow">
-                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                        {{ $header }}
-                    </div>
-                </header>
-            @endisset
+            <!-- Add padding for fixed header -->
+            <div class="pt-24">
+                <!-- Page Heading -->
+                @isset($header)
+                    <header class="bg-slate-900/60 border-b border-slate-800">
+                        <div class="container-app py-4 sm:py-6">
+                            {{ $header }}
+                        </div>
+                    </header>
+                @endisset
 
-            <!-- Page Content -->
-            <main>
-                {{ $slot }}
-            </main>
+                <!-- Page Content -->
+                <main class="pb-6 container-app">
+                    {{ $slot }}
+                </main>
+            </div>
         </div>
     </body>
 </html>

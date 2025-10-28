@@ -29,7 +29,6 @@ class StoryController extends Controller
         VideoCompilationService $videoService,
         PdfMagazineService $pdfService
     ) {
-        $this->middleware('auth');
         $this->storyService = $storyService;
         $this->imageService = $imageService;
         $this->ttsService = $ttsService;
