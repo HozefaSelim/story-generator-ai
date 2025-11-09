@@ -17,13 +17,30 @@ class PdfMagazineService
         // Load the story with all its elements
         $story->load('elements', 'user');
 
+        // Prepare images with base64 encoding
+        $images = [];
+        foreach ($story->elements->where('type', 'image')->sortBy('order') as $element) {
+            $imagePath = Storage::disk('public')->path($element->file_path);
+            
+            if (file_exists($imagePath)) {
+                $imageData = base64_encode(file_get_contents($imagePath));
+                $imageType = pathinfo($imagePath, PATHINFO_EXTENSION);
+                
+                $images[] = [
+                    'src' => 'data:image/' . $imageType . ';base64,' . $imageData,
+                    'description' => $element->metadata['description'] ?? '',
+                    'order' => $element->order,
+                ];
+            }
+        }
+
         // Prepare data for the PDF
         $data = [
             'story' => $story,
             'title' => $story->title,
             'author' => $story->user->name,
             'content' => $story->content,
-            'elements' => $story->elements,
+            'images' => $images,
             'generatedDate' => now()->format('F j, Y'),
         ];
 

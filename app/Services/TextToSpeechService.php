@@ -21,7 +21,7 @@ class TextToSpeechService
     {
         // Available voices: alloy, echo, fable, onyx, nova, shimmer
         
-        $response = Http::withHeaders([
+        $response = Http::timeout(120)->withHeaders([
             'Authorization' => 'Bearer ' . $this->apiKey,
             'Content-Type' => 'application/json',
         ])->post('https://api.openai.com/v1/audio/speech', [

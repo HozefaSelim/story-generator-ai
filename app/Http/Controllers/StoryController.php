@@ -231,6 +231,24 @@ class StoryController extends Controller
     }
 
     /**
+     * Generate PDF for an existing story
+     */
+    public function generatePdf(Story $story)
+    {
+        $this->authorize('update', $story);
+
+        try {
+            $pdfPath = $this->pdfService->generateMagazine($story);
+            $story->update(['pdf_file_path' => $pdfPath]);
+
+            return back()->with('success', 'PDF generated successfully!');
+        } catch (\Exception $e) {
+            Log::error('PDF generation failed: ' . $e->getMessage());
+            return back()->with('error', 'Failed to generate PDF: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Download story as PDF
      */
     public function downloadPdf(Story $story)

@@ -83,23 +83,55 @@
                         </div>
                     @endif
 
-                    <!-- Story Text and Images -->
-                    <div class="card p-10">
-                        <div class="prose prose-lg prose-invert max-w-none">
-                            @if($story->elements && $story->elements->where('type', 'image')->count() > 0)
-                                @foreach($story->elements->where('type', 'image') as $index => $element)
-                                    <div class="not-prose mb-10">
-                                        <div class="rounded-2xl overflow-hidden shadow-2xl hover:shadow-indigo-500/20 transition-shadow duration-300">
-                                            <img src="{{ asset('storage/' . $element->file_path) }}" alt="Scene {{ $index + 1 }}" class="w-full h-auto">
+                    <!-- Story Images Gallery -->
+                    @if($story->elements && $story->elements->where('type', 'image')->count() > 0)
+                        <div class="card p-8">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-bold text-white">🎨 Story Illustrations</h3>
+                                    <p class="text-slate-400 text-sm">AI-generated artwork by DALL-E 3</p>
+                                </div>
+                            </div>
+                            <div class="grid md:grid-cols-2 gap-6">
+                                @foreach($story->elements->where('type', 'image')->sortBy('order') as $index => $element)
+                                    <div class="group">
+                                        <div class="rounded-2xl overflow-hidden shadow-2xl hover:shadow-indigo-500/30 transition-all duration-300 transform hover:scale-[1.02]">
+                                            <img src="{{ asset('storage/' . $element->file_path) }}" 
+                                                 alt="Scene {{ $index + 1 }}" 
+                                                 class="w-full h-auto aspect-square object-cover">
                                         </div>
                                         @if($element->metadata && isset($element->metadata['description']))
-                                            <p class="text-sm text-slate-400 mt-3 italic text-center">{{ $element->metadata['description'] }}</p>
+                                            <p class="text-sm text-slate-400 mt-3 italic">
+                                                <span class="font-semibold text-indigo-400">Scene {{ $index + 1 }}:</span> 
+                                                {{ $element->metadata['description'] }}
+                                            </p>
                                         @endif
                                     </div>
                                 @endforeach
-                            @endif
+                            </div>
+                        </div>
+                    @endif
 
-                            <div class="text-lg leading-relaxed text-slate-200 whitespace-pre-line">
+                    <!-- Story Text -->
+                    <div class="card p-10">
+                        <div class="flex items-center gap-3 mb-8">
+                            <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-white">📖 The Story</h3>
+                                <p class="text-slate-400 text-sm">Written by GPT-4</p>
+                            </div>
+                        </div>
+                        <div class="prose prose-lg prose-invert max-w-none">
+                            <div class="text-lg leading-relaxed text-slate-200 whitespace-pre-line font-serif">
                                 {{ $story->content }}
                             </div>
                         </div>
@@ -146,6 +178,91 @@
                             </video>
                         </div>
                     @endif
+
+                    <!-- Downloads Section -->
+                    <div class="card p-8">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-white">💾 Download Options</h3>
+                                <p class="text-slate-400 text-sm">Save your story in different formats</p>
+                            </div>
+                        </div>
+                        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            @if($story->pdf_file_path)
+                                <a href="{{ route('stories.download-pdf', $story) }}" class="flex items-center gap-4 p-4 bg-gradient-to-br from-red-500/10 to-pink-500/10 hover:from-red-500/20 hover:to-pink-500/20 border border-red-500/30 rounded-xl transition-all group">
+                                    <div class="w-12 h-12 bg-red-500/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                                        <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-white group-hover:text-gradient transition-colors">PDF Magazine</div>
+                                        <div class="text-xs text-slate-400">Printable version</div>
+                                    </div>
+                                </a>
+                            @else
+                                <form method="POST" action="{{ route('stories.generate-pdf', $story) }}" class="w-full">
+                                    @csrf
+                                    <button type="submit" class="w-full flex items-center gap-4 p-4 bg-gradient-to-br from-yellow-500/10 to-orange-500/10 hover:from-yellow-500/20 hover:to-orange-500/20 border border-yellow-500/30 rounded-xl transition-all group">
+                                        <div class="w-12 h-12 bg-yellow-500/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                                            <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                            </svg>
+                                        </div>
+                                        <div class="text-left">
+                                            <div class="font-bold text-white group-hover:text-gradient transition-colors">Generate PDF</div>
+                                            <div class="text-xs text-slate-400">Click to create</div>
+                                        </div>
+                                    </button>
+                                </form>
+                            @endif
+
+                            @if($story->video_file_path)
+                                <a href="{{ route('stories.download-video', $story) }}" class="flex items-center gap-4 p-4 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 hover:from-purple-500/20 hover:to-indigo-500/20 border border-purple-500/30 rounded-xl transition-all group">
+                                    <div class="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                                        <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-white group-hover:text-gradient transition-colors">Story Video</div>
+                                        <div class="text-xs text-slate-400">MP4 format</div>
+                                    </div>
+                                </a>
+                            @else
+                                <div class="flex items-center gap-4 p-4 bg-slate-500/10 border border-slate-500/30 rounded-xl opacity-50">
+                                    <div class="w-12 h-12 bg-slate-500/20 rounded-lg flex items-center justify-center">
+                                        <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-slate-400">Story Video</div>
+                                        <div class="text-xs text-slate-500">Requires FFmpeg</div>
+                                    </div>
+                                </div>
+                            @endif
+
+                            @if($story->voice_file_path)
+                                <a href="{{ asset('storage/' . $story->voice_file_path) }}" download class="flex items-center gap-4 p-4 bg-gradient-to-br from-green-500/10 to-emerald-500/10 hover:from-green-500/20 hover:to-emerald-500/20 border border-green-500/30 rounded-xl transition-all group">
+                                    <div class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                                        <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-white group-hover:text-gradient transition-colors">Audio File</div>
+                                        <div class="text-xs text-slate-400">MP3 format</div>
+                                    </div>
+                                </a>
+                            @endif
+                        </div>
+                    </div>
 
                     <!-- Action Cards -->
                     <div class="grid md:grid-cols-2 gap-6 mt-8">
