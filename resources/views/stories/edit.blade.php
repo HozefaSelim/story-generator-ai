@@ -83,10 +83,10 @@
                         Deleting this story will permanently remove all associated content including images, audio, video, and PDF files. This action is irreversible.
                     </p>
 
-                    <form method="POST" action="{{ route('stories.destroy', $story) }}" onsubmit="return confirm('⚠️ Are you absolutely sure you want to delete this story?\n\nThis will permanently delete:\n• Story text\n• All images\n• Voice narration\n• Video\n• PDF file\n\nThis action cannot be undone!');">
+                    <form id="delete-story-form" method="POST" action="{{ route('stories.destroy', $story) }}">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="inline-flex items-center gap-2 px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold shadow-lg hover:shadow-red-500/50 transition-all duration-300">
+                        <button type="button" onclick="confirmDeleteStory()" class="inline-flex items-center gap-2 px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold shadow-lg hover:shadow-red-500/50 transition-all duration-300">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                             </svg>
@@ -97,4 +97,45 @@
             </div>
         </div>
     </div>
+
+    @push('scripts')
+    <script>
+        function confirmDeleteStory() {
+            Swal.fire({
+                title: '⚠️ Delete Story?',
+                html: `
+                    <div class="text-left text-gray-300">
+                        <p class="mb-3">This will permanently delete:</p>
+                        <ul class="list-disc list-inside space-y-1 text-sm">
+                            <li>Story text</li>
+                            <li>All images</li>
+                            <li>Voice narration</li>
+                            <li>Video file</li>
+                            <li>PDF file</li>
+                        </ul>
+                        <p class="mt-4 text-red-400 font-semibold">This action cannot be undone!</p>
+                    </div>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#4b5563',
+                confirmButtonText: '🗑️ Yes, delete permanently',
+                cancelButtonText: 'Cancel',
+                background: '#1e293b',
+                color: '#f1f5f9',
+                customClass: {
+                    popup: 'rounded-2xl border border-red-500/30',
+                    title: 'text-red-400',
+                    confirmButton: 'rounded-xl px-6 py-2',
+                    cancelButton: 'rounded-xl px-6 py-2'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('delete-story-form').submit();
+                }
+            });
+        }
+    </script>
+    @endpush
 </x-app-layout>

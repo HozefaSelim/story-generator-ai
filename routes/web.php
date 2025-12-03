@@ -19,7 +19,7 @@ Route::get('/how-it-works', [HomeController::class, 'howItWorks'])->name('how-it
 Route::middleware(['auth'])->group(function () {
     Route::resource('stories', StoryController::class);
     Route::post('/stories/{story}/generate', [StoryController::class, 'generate'])->name('stories.generate');
-    Route::post('/stories/{story}/generate-pdf', [StoryController::class, 'generatePdf'])->name('stories.generate-pdf');
+    Route::post('/stories/{story}/regenerate-pdf', [StoryController::class, 'regeneratePdf'])->name('stories.regenerate-pdf');
     Route::get('/stories/{story}/download-pdf', [StoryController::class, 'downloadPdf'])->name('stories.download-pdf');
     Route::get('/stories/{story}/download-video', [StoryController::class, 'downloadVideo'])->name('stories.download-video');
 });

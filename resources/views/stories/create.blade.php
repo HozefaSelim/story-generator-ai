@@ -34,7 +34,12 @@
                             <!-- Title -->
                             <div>
                                 <x-input-label for="title" :value="__('Story Title')" />
-                                <x-text-input id="title" class="block mt-2 w-full" type="text" name="title" :value="old('title')" required autofocus placeholder="Enter a creative title for your story" />
+                                <x-text-input id="title" class="block mt-2 w-full" type="text" name="title" :value="old('title')" required autofocus list="previous-titles" placeholder="Enter a creative title for your story" />
+                                <datalist id="previous-titles">
+                                    @foreach(auth()->user()->stories()->latest()->take(10)->pluck('title') as $prevTitle)
+                                        <option value="{{ $prevTitle }}">
+                                    @endforeach
+                                </datalist>
                                 <x-input-error :messages="$errors->get('title')" class="mt-2" />
                             </div>
 
@@ -91,7 +96,12 @@
                                 <!-- Child Name -->
                                 <div>
                                     <x-input-label for="child_name" :value="__('Child Name (Optional)')" />
-                                    <x-text-input id="child_name" class="block mt-2 w-full" type="text" name="child_name" :value="old('child_name')" placeholder="e.g., Emma" />
+                                    <x-text-input id="child_name" class="block mt-2 w-full" type="text" name="child_name" :value="old('child_name')" list="previous-child-names" placeholder="e.g., Emma" />
+                                    <datalist id="previous-child-names">
+                                        @foreach($previousChildNames as $name)
+                                            <option value="{{ $name }}">
+                                        @endforeach
+                                    </datalist>
                                     <x-input-error :messages="$errors->get('child_name')" class="mt-2" />
                                     <p class="mt-2 text-sm text-slate-400">Make them the hero of the story</p>
                                 </div>
@@ -110,7 +120,12 @@
                                 <!-- Interests -->
                                 <div>
                                     <x-input-label for="interests" :value="__('Interests (Optional)')" />
-                                    <x-text-input id="interests" class="block mt-2 w-full" type="text" name="interests" :value="old('interests')" placeholder="e.g., dinosaurs, space" />
+                                    <x-text-input id="interests" class="block mt-2 w-full" type="text" name="interests" :value="old('interests')" list="previous-interests" placeholder="e.g., dinosaurs, space" />
+                                    <datalist id="previous-interests">
+                                        @foreach($previousInterests as $interest)
+                                            <option value="{{ $interest }}">
+                                        @endforeach
+                                    </datalist>
                                     <x-input-error :messages="$errors->get('interests')" class="mt-2" />
                                 </div>
 
@@ -131,9 +146,114 @@
                             <!-- Educational Lesson -->
                             <div>
                                 <x-input-label for="lesson" :value="__('Educational Lesson (Optional)')" />
-                                <x-text-input id="lesson" class="block mt-2 w-full" type="text" name="lesson" :value="old('lesson')" placeholder="e.g., importance of friendship, being brave" />
+                                <x-text-input id="lesson" class="block mt-2 w-full" type="text" name="lesson" :value="old('lesson')" list="previous-lessons" placeholder="e.g., importance of friendship, being brave" />
+                                <datalist id="previous-lessons">
+                                    @foreach($previousLessons as $lesson)
+                                        <option value="{{ $lesson }}">
+                                    @endforeach
+                                </datalist>
                                 <x-input-error :messages="$errors->get('lesson')" class="mt-2" />
                                 <p class="mt-2 text-sm text-slate-400">Include a moral or lesson</p>
+                            </div>
+                        </div>
+
+                        <!-- AI Agent Selection Section -->
+                        <div class="space-y-6 pt-6 border-t border-slate-700">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div class="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center">
+                                    <span class="text-xl">🤖</span>
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-bold text-white">AI Agent Selection</h3>
+                                    <p class="text-sm text-slate-400">Choose which AI models to use for generation</p>
+                                </div>
+                            </div>
+
+                            <!-- Text Generation Agent -->
+                            <div>
+                                <x-input-label for="text_agent" :value="__('Story Text Agent')" />
+                                <p class="text-sm text-slate-400 mb-3">Choose AI model for writing your story</p>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    @foreach($textAgents as $key => $agent)
+                                    <label class="relative cursor-pointer block group">
+                                        <input type="radio" name="text_agent" value="{{ $key }}" class="peer sr-only" {{ old('text_agent', 'openai_gpt4') == $key ? 'checked' : '' }}>
+                                        <div class="h-full rounded-xl p-4 border-2 border-slate-700 bg-slate-800/50 peer-checked:border-indigo-500 peer-checked:bg-indigo-500/20 hover:border-slate-500 transition-all duration-200">
+                                            <div class="text-center">
+                                                <span class="text-3xl block mb-2">{{ $agent['icon'] }}</span>
+                                                <h4 class="font-bold text-white text-sm">{{ $agent['name'] }}</h4>
+                                                <p class="text-xs text-slate-400 mt-1">{{ $agent['description'] }}</p>
+                                            </div>
+                                        </div>
+                                        <!-- Empty circle (unchecked) -->
+                                        <div class="absolute top-4 right-4 w-5 h-5 rounded-full border-2 border-slate-500 peer-checked:hidden"></div>
+                                        <!-- Filled circle with check (checked) -->
+                                        <div class="absolute top-4 right-4 w-5 h-5 rounded-full bg-indigo-500 border-2 border-indigo-500 hidden peer-checked:flex items-center justify-center">
+                                            <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                            </svg>
+                                        </div>
+                                    </label>
+                                    @endforeach
+                                </div>
+                                <x-input-error :messages="$errors->get('text_agent')" class="mt-2" />
+                            </div>
+
+                            <!-- Image Generation Agent -->
+                            <div>
+                                <x-input-label for="image_agent" :value="__('Image Generation Agent')" />
+                                <p class="text-sm text-slate-400 mb-3">Choose AI model for creating illustrations</p>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    @foreach($imageAgents as $key => $agent)
+                                    <label class="relative cursor-pointer block">
+                                        <input type="radio" name="image_agent" value="{{ $key }}" class="peer sr-only" {{ old('image_agent', 'dalle3') == $key ? 'checked' : '' }}>
+                                        <div class="h-full rounded-xl p-4 border-2 border-slate-700 bg-slate-800/50 peer-checked:border-purple-500 peer-checked:bg-purple-500/20 hover:border-slate-500 transition-all duration-200">
+                                            <div class="text-center">
+                                                <span class="text-3xl block mb-2">{{ $agent['icon'] }}</span>
+                                                <h4 class="font-bold text-white text-sm">{{ $agent['name'] }}</h4>
+                                                <p class="text-xs text-slate-400 mt-1">{{ $agent['description'] }}</p>
+                                            </div>
+                                        </div>
+                                        <!-- Empty circle (unchecked) -->
+                                        <div class="absolute top-4 right-4 w-5 h-5 rounded-full border-2 border-slate-500 peer-checked:hidden"></div>
+                                        <!-- Filled circle with check (checked) -->
+                                        <div class="absolute top-4 right-4 w-5 h-5 rounded-full bg-purple-500 border-2 border-purple-500 hidden peer-checked:flex items-center justify-center">
+                                            <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                            </svg>
+                                        </div>
+                                    </label>
+                                    @endforeach
+                                </div>
+                                <x-input-error :messages="$errors->get('image_agent')" class="mt-2" />
+                            </div>
+
+                            <!-- Voice Agent -->
+                            <div>
+                                <x-input-label for="voice_agent" :value="__('Voice Generation Agent')" />
+                                <p class="text-sm text-slate-400 mb-3">Choose audio quality for narration</p>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    @foreach($voiceAgents as $key => $agent)
+                                    <label class="relative cursor-pointer block">
+                                        <input type="radio" name="voice_agent" value="{{ $key }}" class="peer sr-only" {{ old('voice_agent', 'openai_tts') == $key ? 'checked' : '' }}>
+                                        <div class="h-full rounded-xl p-4 border-2 border-slate-700 bg-slate-800/50 peer-checked:border-pink-500 peer-checked:bg-pink-500/20 hover:border-slate-500 transition-all duration-200">
+                                            <div class="text-center">
+                                                <span class="text-3xl block mb-2">{{ $agent['icon'] }}</span>
+                                                <h4 class="font-bold text-white text-sm">{{ $agent['name'] }}</h4>
+                                                <p class="text-xs text-slate-400 mt-1">{{ $agent['description'] }}</p>
+                                            </div>
+                                        </div>
+                                        <!-- Empty circle (unchecked) -->
+                                        <div class="absolute top-4 right-4 w-5 h-5 rounded-full border-2 border-slate-500 peer-checked:hidden"></div>
+                                        <!-- Filled circle with check (checked) -->
+                                        <div class="absolute top-4 right-4 w-5 h-5 rounded-full bg-pink-500 border-2 border-pink-500 hidden peer-checked:flex items-center justify-center">
+                                            <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                            </svg>
+                                        </div>
+                                    </label>
+                                    @endforeach
+                                </div>
+                                <x-input-error :messages="$errors->get('voice_agent')" class="mt-2" />
                             </div>
                         </div>
 
@@ -165,15 +285,15 @@
                         </div>
                     </div>
                     <div>
-                        <h3 class="text-lg font-bold text-white mb-2">🤖 AI-Powered Generation</h3>
+                        <h3 class="text-lg font-bold text-white mb-2">🤖 Multi-Agent AI Generation</h3>
                         <p class="text-slate-300 leading-relaxed">
-                            Your story will be crafted by GPT-4, with custom illustrations from DALL-E 3, professional voice narration, and optionally compiled into a video. The entire process takes 2-5 minutes depending on complexity.
+                            Choose from multiple AI providers! OpenAI, Google Gemini, or Stability AI. Each offers unique strengths for your story creation.
                         </p>
-                        <div class="mt-4 flex flex-wrap gap-3 text-sm">
-                            <span class="px-3 py-1.5 bg-green-500/20 text-green-300 rounded-lg font-medium border border-green-500/30">✓ GPT-4 Story</span>
-                            <span class="px-3 py-1.5 bg-blue-500/20 text-blue-300 rounded-lg font-medium border border-blue-500/30">✓ DALL-E Images</span>
-                            <span class="px-3 py-1.5 bg-purple-500/20 text-purple-300 rounded-lg font-medium border border-purple-500/30">✓ Voice Narration</span>
-                            <span class="px-3 py-1.5 bg-pink-500/20 text-pink-300 rounded-lg font-medium border border-pink-500/30">✓ PDF Export</span>
+                        <div class="mt-4 flex flex-wrap gap-2 text-xs">
+                            <span class="px-3 py-1.5 bg-emerald-500/20 text-emerald-300 rounded-lg font-medium border border-emerald-500/30">🤖 OpenAI GPT-4</span>
+                            <span class="px-3 py-1.5 bg-blue-500/20 text-blue-300 rounded-lg font-medium border border-blue-500/30">💎 Google Gemini</span>
+                            <span class="px-3 py-1.5 bg-purple-500/20 text-purple-300 rounded-lg font-medium border border-purple-500/30">🎨 DALL-E 3</span>
+                            <span class="px-3 py-1.5 bg-orange-500/20 text-orange-300 rounded-lg font-medium border border-orange-500/30">🌟 Stability AI</span>
                         </div>
                     </div>
                 </div>

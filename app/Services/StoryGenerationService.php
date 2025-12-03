@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use OpenAI\Laravel\Facades\OpenAI;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class StoryGenerationService
 {
@@ -12,24 +14,75 @@ class StoryGenerationService
     public function generateStory(string $theme, string $style, array $additionalParams = []): string
     {
         $prompt = $this->buildPrompt($theme, $style, $additionalParams);
+        
+        // Get the selected AI agent (default to gpt-4)
+        $agent = $additionalParams['text_agent'] ?? 'openai_gpt4';
+        $agentConfig = config("services.ai_agents.text.{$agent}");
+        $provider = $agentConfig['provider'] ?? 'openai';
 
+        $systemPrompt = 'You are a creative children\'s story writer. Create engaging, educational, and age-appropriate stories that captivate young readers.';
+
+        return match ($provider) {
+            'openai' => $this->generateWithOpenAI($systemPrompt, $prompt, $agentConfig['model'] ?? 'gpt-4'),
+            'gemini' => $this->generateWithGemini($systemPrompt, $prompt, $agentConfig['model'] ?? 'gemini-pro'),
+            default => $this->generateWithOpenAI($systemPrompt, $prompt, 'gpt-4'),
+        };
+    }
+
+    /**
+     * Generate text with OpenAI
+     */
+    protected function generateWithOpenAI(string $systemPrompt, string $userPrompt, string $model): string
+    {
         $response = OpenAI::chat()->create([
-            'model' => 'gpt-4',
+            'model' => $model,
             'messages' => [
-                [
-                    'role' => 'system',
-                    'content' => 'You are a creative children\'s story writer. Create engaging, educational, and age-appropriate stories that captivate young readers.'
-                ],
-                [
-                    'role' => 'user',
-                    'content' => $prompt
-                ]
+                ['role' => 'system', 'content' => $systemPrompt],
+                ['role' => 'user', 'content' => $userPrompt]
             ],
             'temperature' => 0.8,
             'max_tokens' => 2000,
         ]);
 
         return $response->choices[0]->message->content;
+    }
+
+    /**
+     * Generate text with Google Gemini
+     */
+    protected function generateWithGemini(string $systemPrompt, string $userPrompt, string $model): string
+    {
+        $apiKey = config('services.gemini.api_key');
+        
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/json',
+        ])->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}", [
+            'contents' => [
+                [
+                    'role' => 'user',
+                    'parts' => [
+                        ['text' => $systemPrompt . "\n\n" . $userPrompt]
+                    ]
+                ]
+            ],
+            'generationConfig' => [
+                'temperature' => 0.8,
+                'maxOutputTokens' => 2000,
+            ],
+        ]);
+
+        if (!$response->successful()) {
+            Log::error('Gemini text generation failed: ' . $response->body());
+            throw new \Exception('Failed to generate text with Gemini: ' . $response->body());
+        }
+
+        $data = $response->json();
+        
+        if (isset($data['candidates'][0]['content']['parts'][0]['text'])) {
+            return $data['candidates'][0]['content']['parts'][0]['text'];
+        }
+
+        throw new \Exception('No text data received from Gemini');
     }
 
     /**
@@ -67,31 +120,24 @@ class StoryGenerationService
     /**
      * Generate scene descriptions for image generation
      */
-    public function generateSceneDescriptions(string $storyContent, int $numberOfScenes = 4): array
+    public function generateSceneDescriptions(string $storyContent, int $numberOfScenes = 4, string $agent = 'openai_gpt4'): array
     {
         $prompt = "Given the following children's story, create {$numberOfScenes} distinct scene descriptions that would make good illustrations. ";
         $prompt .= "Each description should be detailed enough for AI image generation, focusing on visual elements, characters, setting, and mood.\n\n";
         $prompt .= "Story:\n{$storyContent}\n\n";
         $prompt .= "Return the scene descriptions as a numbered list (1-{$numberOfScenes}).";
 
-        $response = OpenAI::chat()->create([
-            'model' => 'gpt-4',
-            'messages' => [
-                [
-                    'role' => 'system',
-                    'content' => 'You are an expert at creating visual scene descriptions for children\'s book illustrations.'
-                ],
-                [
-                    'role' => 'user',
-                    'content' => $prompt
-                ]
-            ],
-            'temperature' => 0.7,
-        ]);
+        $systemPrompt = 'You are an expert at creating visual scene descriptions for children\'s book illustrations.';
 
-        $content = $response->choices[0]->message->content;
+        $agentConfig = config("services.ai_agents.text.{$agent}");
+        $provider = $agentConfig['provider'] ?? 'openai';
+
+        $content = match ($provider) {
+            'openai' => $this->generateWithOpenAI($systemPrompt, $prompt, $agentConfig['model'] ?? 'gpt-4'),
+            'gemini' => $this->generateWithGemini($systemPrompt, $prompt, $agentConfig['model'] ?? 'gemini-pro'),
+            default => $this->generateWithOpenAI($systemPrompt, $prompt, 'gpt-4'),
+        };
         
-        // Parse the numbered list into an array
         return $this->parseSceneDescriptions($content);
     }
 
@@ -104,7 +150,6 @@ class StoryGenerationService
         $scenes = [];
 
         foreach ($lines as $line) {
-            // Match lines starting with number
             if (preg_match('/^\d+[\.\)]\s*(.+)$/i', trim($line), $matches)) {
                 $scenes[] = trim($matches[1]);
             }
@@ -113,4 +158,3 @@ class StoryGenerationService
         return $scenes;
     }
 }
-

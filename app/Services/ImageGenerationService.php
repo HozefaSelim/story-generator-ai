@@ -4,45 +4,149 @@ namespace App\Services;
 
 use OpenAI\Laravel\Facades\OpenAI;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class ImageGenerationService
 {
     /**
-     * Generate an image using DALL-E
+     * Generate an image using the selected agent
      */
-    public function generateImage(string $description, string $style = 'vivid'): string
+    public function generateImage(string $description, string $style = 'vivid', string $agent = 'dalle3'): string
     {
         $prompt = $this->enhancePromptForChildren($description);
+        $agentConfig = config("services.ai_agents.image.{$agent}");
+        $provider = $agentConfig['provider'] ?? 'openai';
 
-        $response = OpenAI::images()->create([
-            'model' => 'dall-e-3',
+        return match ($provider) {
+            'openai' => $this->generateWithOpenAI($prompt, $style, $agentConfig['model'] ?? 'dall-e-3'),
+            'gemini' => $this->generateWithGemini($prompt, $agentConfig['model'] ?? 'imagen-3.0-generate-002'),
+            'stability' => $this->generateWithStability($prompt, $agentConfig['model'] ?? 'sd3-large'),
+            default => $this->generateWithOpenAI($prompt, $style, 'dall-e-3'),
+        };
+    }
+
+    /**
+     * Generate image with OpenAI DALL-E
+     */
+    protected function generateWithOpenAI(string $prompt, string $style, string $model): string
+    {
+        $requestData = [
+            'model' => $model,
             'prompt' => $prompt,
-            'size' => '1024x1024',
-            'quality' => 'standard',
-            'style' => $style, // 'vivid' or 'natural'
             'n' => 1,
-        ]);
+        ];
 
+        // DALL-E 3 specific options
+        if ($model === 'dall-e-3') {
+            $requestData['size'] = '1024x1024';
+            $requestData['quality'] = 'standard';
+            $requestData['style'] = $style;
+        } else {
+            $requestData['size'] = '1024x1024';
+        }
+
+        $response = OpenAI::images()->create($requestData);
         $imageUrl = $response->data[0]->url;
 
-        // Download and save the image
         return $this->downloadAndSaveImage($imageUrl);
+    }
+
+    /**
+     * Generate image with Google Gemini Imagen
+     */
+    protected function generateWithGemini(string $prompt, string $model): string
+    {
+        $apiKey = config('services.gemini.api_key');
+        
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/json',
+        ])->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateImages?key={$apiKey}", [
+            'prompt' => $prompt,
+            'number_of_images' => 1,
+            'aspect_ratio' => '1:1',
+            'safety_filter_level' => 'BLOCK_LOW_AND_ABOVE',
+            'person_generation' => 'ALLOW_ADULT',
+        ]);
+
+        if (!$response->successful()) {
+            Log::error('Gemini image generation failed: ' . $response->body());
+            throw new \Exception('Failed to generate image with Gemini: ' . $response->body());
+        }
+
+        $data = $response->json();
+        
+        // Gemini returns base64 encoded images
+        if (isset($data['generatedImages'][0]['image']['imageBytes'])) {
+            $imageContent = base64_decode($data['generatedImages'][0]['image']['imageBytes']);
+            return $this->saveImageContent($imageContent);
+        }
+
+        throw new \Exception('No image data received from Gemini');
+    }
+
+    /**
+     * Generate image with Stability AI
+     */
+    protected function generateWithStability(string $prompt, string $model): string
+    {
+        $apiKey = config('services.stability.api_key');
+        
+        // Determine the endpoint based on model
+        $endpoint = match ($model) {
+            'sd3-large', 'sd3-medium', 'sd3-large-turbo' => 'https://api.stability.ai/v2beta/stable-image/generate/sd3',
+            'core' => 'https://api.stability.ai/v2beta/stable-image/generate/core',
+            'ultra' => 'https://api.stability.ai/v2beta/stable-image/generate/ultra',
+            default => 'https://api.stability.ai/v2beta/stable-image/generate/core',
+        };
+
+        // Build multipart data
+        $multipartData = [
+            [
+                'name' => 'prompt',
+                'contents' => $prompt,
+            ],
+            [
+                'name' => 'output_format',
+                'contents' => 'png',
+            ],
+        ];
+
+        // SD3 requires model parameter, core/ultra don't
+        if (str_starts_with($model, 'sd3')) {
+            $multipartData[] = [
+                'name' => 'model',
+                'contents' => $model,
+            ];
+        }
+
+        $response = Http::withHeaders([
+            'Authorization' => "Bearer {$apiKey}",
+            'Accept' => 'image/*',
+        ])->asMultipart()->post($endpoint, $multipartData);
+
+        if (!$response->successful()) {
+            Log::error('Stability AI image generation failed: ' . $response->body());
+            throw new \Exception('Failed to generate image with Stability AI: ' . $response->body());
+        }
+
+        // Stability returns raw image bytes
+        return $this->saveImageContent($response->body());
     }
 
     /**
      * Generate multiple images for story scenes
      */
-    public function generateImagesForScenes(array $sceneDescriptions, string $style = 'vivid'): array
+    public function generateImagesForScenes(array $sceneDescriptions, string $style = 'vivid', string $agent = 'dalle3'): array
     {
         $imagePaths = [];
 
         foreach ($sceneDescriptions as $index => $description) {
             try {
-                $imagePath = $this->generateImage($description, $style);
+                $imagePath = $this->generateImage($description, $style, $agent);
                 $imagePaths[$index] = $imagePath;
             } catch (\Exception $e) {
-                // Log error and continue with other images
-                \Log::error("Failed to generate image for scene {$index}: " . $e->getMessage());
+                Log::error("Failed to generate image for scene {$index}: " . $e->getMessage());
                 $imagePaths[$index] = null;
             }
         }
@@ -52,18 +156,10 @@ class ImageGenerationService
 
     /**
      * Integrate user's photo into the story
-     * This would require additional image manipulation
      */
     public function integrateUserPhoto(string $userPhotoPath, string $sceneDescription): string
     {
-        // For this implementation, we'll enhance the prompt to describe the child
-        // In a production environment, you might use additional APIs or image processing
-        
         $prompt = $sceneDescription . " The main character should match the appearance of the child in the reference photo.";
-        
-        // In a real implementation, you might use OpenAI's image variation endpoint
-        // or another service that can integrate the user's photo
-        
         return $this->generateImage($prompt);
     }
 
@@ -79,27 +175,29 @@ class ImageGenerationService
     }
 
     /**
-     * Download and save the generated image
+     * Download and save the generated image from URL
      */
     protected function downloadAndSaveImage(string $imageUrl): string
     {
         $imageContent = file_get_contents($imageUrl);
+        return $this->saveImageContent($imageContent);
+    }
+
+    /**
+     * Save image content to storage
+     */
+    protected function saveImageContent(string $imageContent): string
+    {
         $fileName = 'story-images/' . uniqid() . '.png';
-        
         Storage::disk('public')->put($fileName, $imageContent);
-        
         return $fileName;
     }
 
     /**
-     * Edit an image using the DALL-E edit endpoint (if user wants to modify)
+     * Edit an image using the DALL-E edit endpoint
      */
     public function editImage(string $imagePath, string $prompt): string
     {
-        // This would use OpenAI's image edit endpoint
-        // Implementation would depend on specific requirements
-        
-        return $imagePath; // Placeholder
+        return $imagePath;
     }
 }
-

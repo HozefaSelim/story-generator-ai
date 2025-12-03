@@ -56,8 +56,23 @@ class StoryController extends Controller
         $themes = $this->getAvailableThemes();
         $styles = $this->getAvailableStyles();
         $voices = $this->ttsService->getAvailableVoices();
+        
+        // Get available AI agents
+        $textAgents = config('services.ai_agents.text', []);
+        $imageAgents = config('services.ai_agents.image', []);
+        $voiceAgents = config('services.ai_agents.voice', []);
 
-        return view('stories.create', compact('themes', 'styles', 'voices'));
+        // Get previous values from user's stories for autocomplete
+        $userStories = Auth::user()->stories()->latest()->take(20)->get();
+        $previousChildNames = $userStories->pluck('settings.child_name')->filter()->unique()->values();
+        $previousInterests = $userStories->pluck('settings.interests')->filter()->unique()->values();
+        $previousLessons = $userStories->pluck('settings.lesson')->filter()->unique()->values();
+
+        return view('stories.create', compact(
+            'themes', 'styles', 'voices', 
+            'textAgents', 'imageAgents', 'voiceAgents',
+            'previousChildNames', 'previousInterests', 'previousLessons'
+        ));
     }
 
     /**
@@ -75,6 +90,9 @@ class StoryController extends Controller
             'lesson' => 'nullable|string',
             'voice' => 'required|string',
             'num_images' => 'integer|min:1|max:10',
+            'text_agent' => 'nullable|string',
+            'image_agent' => 'nullable|string',
+            'voice_agent' => 'nullable|string',
         ]);
 
         DB::beginTransaction();
@@ -95,6 +113,9 @@ class StoryController extends Controller
                     'lesson' => $request->lesson,
                     'voice' => $request->voice,
                     'num_images' => $request->num_images ?? 4,
+                    'text_agent' => $request->text_agent ?? 'openai_gpt4',
+                    'image_agent' => $request->image_agent ?? 'dalle3',
+                    'voice_agent' => $request->voice_agent ?? 'openai_tts',
                 ],
             ]);
 
@@ -124,6 +145,39 @@ class StoryController extends Controller
         $story->load('elements', 'uploads');
 
         return view('stories.show', compact('story'));
+    }
+
+    /**
+     * Show the form for editing the specified story
+     */
+    public function edit(Story $story)
+    {
+        $this->authorize('update', $story);
+
+        return view('stories.edit', compact('story'));
+    }
+
+    /**
+     * Update the specified story in storage
+     */
+    public function update(Request $request, Story $story)
+    {
+        $this->authorize('update', $story);
+
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'status' => 'required|in:draft,processing,completed,failed',
+        ]);
+
+        $story->update([
+            'title' => $request->title,
+            'description' => $request->description,
+            'status' => $request->status,
+        ]);
+
+        return redirect()->route('stories.show', $story)
+            ->with('success', 'Story updated successfully!');
     }
 
     /**
@@ -158,10 +212,12 @@ class StoryController extends Controller
 
             // Step 2: Generate scene descriptions
             $numImages = $settings['num_images'] ?? 4;
-            $sceneDescriptions = $this->storyService->generateSceneDescriptions($storyContent, $numImages);
+            $textAgent = $settings['text_agent'] ?? 'openai_gpt4';
+            $sceneDescriptions = $this->storyService->generateSceneDescriptions($storyContent, $numImages, $textAgent);
 
             // Step 3: Generate images
-            $imagePaths = $this->imageService->generateImagesForScenes($sceneDescriptions);
+            $imageAgent = $settings['image_agent'] ?? 'dalle3';
+            $imagePaths = $this->imageService->generateImagesForScenes($sceneDescriptions, 'vivid', $imageAgent);
 
             foreach ($imagePaths as $index => $imagePath) {
                 if ($imagePath) {
@@ -177,7 +233,8 @@ class StoryController extends Controller
 
             // Step 4: Generate voice narration
             $voice = $settings['voice'] ?? 'nova';
-            $audioPath = $this->ttsService->convertStoryToSpeech($storyContent, $voice);
+            $voiceAgent = $settings['voice_agent'] ?? 'openai_tts';
+            $audioPath = $this->ttsService->convertStoryToSpeech($storyContent, $voice, $voiceAgent);
 
             $story->update(['voice_file_path' => $audioPath]);
 
@@ -231,24 +288,6 @@ class StoryController extends Controller
     }
 
     /**
-     * Generate PDF for an existing story
-     */
-    public function generatePdf(Story $story)
-    {
-        $this->authorize('update', $story);
-
-        try {
-            $pdfPath = $this->pdfService->generateMagazine($story);
-            $story->update(['pdf_file_path' => $pdfPath]);
-
-            return back()->with('success', 'PDF generated successfully!');
-        } catch (\Exception $e) {
-            Log::error('PDF generation failed: ' . $e->getMessage());
-            return back()->with('error', 'Failed to generate PDF: ' . $e->getMessage());
-        }
-    }
-
-    /**
      * Download story as PDF
      */
     public function downloadPdf(Story $story)
@@ -260,6 +299,30 @@ class StoryController extends Controller
         }
 
         return $this->pdfService->downloadPdf($story->pdf_file_path, $story->title . '.pdf');
+    }
+
+    /**
+     * Regenerate PDF for existing story
+     */
+    public function regeneratePdf(Story $story)
+    {
+        $this->authorize('update', $story);
+
+        try {
+            // Delete old PDF if exists
+            if ($story->pdf_file_path) {
+                \Storage::disk('public')->delete($story->pdf_file_path);
+            }
+
+            // Generate new PDF
+            $pdfPath = $this->pdfService->generateMagazine($story);
+            $story->update(['pdf_file_path' => $pdfPath]);
+
+            return back()->with('success', 'PDF regenerated successfully!');
+        } catch (\Exception $e) {
+            Log::error('PDF regeneration failed: ' . $e->getMessage());
+            return back()->with('error', 'Failed to regenerate PDF: ' . $e->getMessage());
+        }
     }
 
     /**

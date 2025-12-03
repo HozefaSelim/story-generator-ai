@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Story;
+use App\Models\StoryElement;
 use App\Services\StoryGenerationService;
 use App\Services\ImageGenerationService;
 use App\Services\TextToSpeechService;
@@ -48,12 +49,19 @@ class GenerateStoryJob implements ShouldQueue
             $story->update(['status' => 'processing']);
             $settings = $story->settings ?? [];
 
+            // Get selected agents from settings
+            $textAgent = $settings['text_agent'] ?? 'openai_gpt4';
+            $imageAgent = $settings['image_agent'] ?? 'dalle3';
+            $voiceAgent = $settings['voice_agent'] ?? 'openai_tts';
+
+            Log::info("Generating story {$story->id} with agents: text={$textAgent}, image={$imageAgent}, voice={$voiceAgent}");
+
             // Step 1: Generate story text
-            Log::info("Generating story text for story {$story->id}");
+            Log::info("Step 1: Generating story text...");
             $storyContent = $storyService->generateStory(
                 $story->theme,
                 $story->style,
-                $settings
+                array_merge($settings, ['text_agent' => $textAgent])
             );
 
             $story->update([
@@ -62,25 +70,29 @@ class GenerateStoryJob implements ShouldQueue
             ]);
 
             // Save text as element
-            \App\Models\StoryElement::create([
+            StoryElement::create([
                 'story_id' => $story->id,
                 'type' => 'text',
                 'content' => $storyContent,
                 'order' => 0,
             ]);
 
+            Log::info("Step 1 complete: Story text generated");
+
             // Step 2: Generate scene descriptions
-            Log::info("Generating scene descriptions for story {$story->id}");
+            Log::info("Step 2: Generating scene descriptions...");
             $numImages = $settings['num_images'] ?? 4;
-            $sceneDescriptions = $storyService->generateSceneDescriptions($storyContent, $numImages);
+            $sceneDescriptions = $storyService->generateSceneDescriptions($storyContent, $numImages, $textAgent);
+
+            Log::info("Step 2 complete: {$numImages} scene descriptions generated");
 
             // Step 3: Generate images
-            Log::info("Generating images for story {$story->id}");
-            $imagePaths = $imageService->generateImagesForScenes($sceneDescriptions);
+            Log::info("Step 3: Generating images with {$imageAgent}...");
+            $imagePaths = $imageService->generateImagesForScenes($sceneDescriptions, 'vivid', $imageAgent);
 
             foreach ($imagePaths as $index => $imagePath) {
                 if ($imagePath) {
-                    \App\Models\StoryElement::create([
+                    StoryElement::create([
                         'story_id' => $story->id,
                         'type' => 'image',
                         'file_path' => $imagePath,
@@ -90,24 +102,28 @@ class GenerateStoryJob implements ShouldQueue
                 }
             }
 
+            Log::info("Step 3 complete: Images generated");
+
             // Step 4: Generate voice narration
-            Log::info("Generating voice narration for story {$story->id}");
+            Log::info("Step 4: Generating voice narration with {$voiceAgent}...");
             $voice = $settings['voice'] ?? 'nova';
-            $audioPath = $ttsService->convertStoryToSpeech($storyContent, $voice);
+            $audioPath = $ttsService->convertStoryToSpeech($storyContent, $voice, $voiceAgent);
 
             $story->update(['voice_file_path' => $audioPath]);
 
-            \App\Models\StoryElement::create([
+            StoryElement::create([
                 'story_id' => $story->id,
                 'type' => 'voice',
                 'file_path' => $audioPath,
                 'order' => 999,
             ]);
 
-            // Step 5: Generate video (optional, requires FFmpeg)
-            if ($imagePaths) {
+            Log::info("Step 4 complete: Voice narration generated");
+
+            // Step 5: Generate video (optional)
+            if (!empty(array_filter($imagePaths))) {
+                Log::info("Step 5: Generating video...");
                 try {
-                    Log::info("Generating video for story {$story->id}");
                     $videoPath = $videoService->compileStoryVideo(
                         array_filter($imagePaths),
                         $audioPath,
@@ -116,38 +132,36 @@ class GenerateStoryJob implements ShouldQueue
 
                     $story->update(['video_file_path' => $videoPath]);
 
-                    \App\Models\StoryElement::create([
+                    StoryElement::create([
                         'story_id' => $story->id,
                         'type' => 'video',
                         'file_path' => $videoPath,
                         'order' => 1000,
                     ]);
-                    
-                    Log::info("Video generated successfully for story {$story->id}");
+
+                    Log::info("Step 5 complete: Video generated");
                 } catch (\Exception $e) {
-                    // Video generation is optional - log the error but don't fail the job
-                    Log::warning("Video generation skipped for story {$story->id}: " . $e->getMessage());
+                    Log::warning("Video generation skipped: " . $e->getMessage());
                 }
             }
 
-            // Step 6: Generate PDF magazine (optional)
+            // Step 6: Generate PDF magazine
+            Log::info("Step 6: Generating PDF...");
             try {
-                Log::info("Generating PDF for story {$story->id}");
-                $pdfPath = $pdfService->generateMagazine($story);
+                $pdfPath = $pdfService->generateMagazine($story->fresh());
                 $story->update(['pdf_file_path' => $pdfPath]);
-                Log::info("PDF generated successfully for story {$story->id}");
+                Log::info("Step 6 complete: PDF generated");
             } catch (\Exception $e) {
-                // PDF generation is optional - log the error but don't fail the job
-                Log::warning("PDF generation skipped for story {$story->id}: " . $e->getMessage());
+                Log::warning("PDF generation skipped: " . $e->getMessage());
             }
 
             // Mark as completed
             $story->update(['status' => 'completed']);
-
-            Log::info("Story {$story->id} generated successfully");
+            Log::info("Story {$story->id} generated successfully!");
 
         } catch (\Exception $e) {
             Log::error("Failed to generate story {$story->id}: " . $e->getMessage());
+            Log::error($e->getTraceAsString());
             $story->update(['status' => 'failed']);
             throw $e;
         }

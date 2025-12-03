@@ -5,7 +5,7 @@
     <title>{{ $title }}</title>
     <style>
         @page {
-            margin: 0;
+            margin: 40px;
         }
         * {
             margin: 0;
@@ -21,104 +21,167 @@
         /* Cover Page */
         .cover-page {
             page-break-after: always;
-            height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 60px;
-            color: white;
             text-align: center;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            padding-top: 200px;
         }
-        .cover-page h1 {
-            font-size: 48px;
-            margin-bottom: 30px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-        .cover-page .theme {
-            font-size: 24px;
-            margin-bottom: 20px;
-            opacity: 0.9;
-        }
-        .cover-page .author {
-            font-size: 18px;
-            margin-top: 40px;
-            opacity: 0.8;
-        }
-        .cover-page .date {
-            font-size: 14px;
-            margin-top: 10px;
-            opacity: 0.7;
-        }
-        
-        /* Content Pages */
-        .content-page {
-            padding: 60px;
-            page-break-after: always;
-        }
-        .content-page h2 {
-            color: #667eea;
-            font-size: 32px;
-            margin-bottom: 30px;
-            text-align: center;
-        }
-        .story-content {
-            font-size: 14px;
-            line-height: 1.8;
-            text-align: justify;
+        .cover-decoration {
+            font-size: 50px;
             margin-bottom: 40px;
         }
-        .story-content p {
-            margin-bottom: 20px;
+        .cover-title {
+            font-size: 36px;
+            font-weight: bold;
+            color: #000;
+            margin-bottom: 30px;
+            line-height: 1.3;
+        }
+        .cover-theme {
+            font-size: 18px;
+            color: #444;
+            margin-bottom: 10px;
+        }
+        .cover-style {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 40px;
+        }
+        .cover-starring {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+        .cover-author {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 8px;
+        }
+        .cover-date {
+            font-size: 12px;
+            color: #777;
+            margin-top: 50px;
+        }
+        
+        /* Story Content Page */
+        .content-page {
+            page-break-after: always;
+        }
+        .content-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+        }
+        .story-text {
+            font-size: 12px;
+            line-height: 1.8;
+            text-align: justify;
+            color: #333;
+        }
+        .story-text p {
+            margin-bottom: 15px;
+            text-indent: 25px;
         }
         
         /* Image Pages */
         .image-page {
             page-break-after: always;
-            padding: 60px 40px;
             text-align: center;
+            padding-top: 20px;
         }
-        .image-page img {
-            max-width: 90%;
-            height: auto;
-            margin: 20px auto;
-            display: block;
+        .scene-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .scene-image {
+            max-width: 100%;
+            max-height: 450px;
             border: 3px solid #667eea;
-            border-radius: 10px;
+            border-radius: 8px;
         }
-        .image-caption {
-            margin-top: 20px;
+        .scene-caption {
             font-size: 11px;
-            color: #555;
+            color: #666;
             font-style: italic;
-            padding: 0 40px;
+            margin-top: 15px;
+            padding: 0 30px;
         }
         
-        /* Footer */
-        .footer {
-            position: fixed;
-            bottom: 30px;
-            left: 60px;
-            right: 60px;
+        /* End Page */
+        .end-page {
             text-align: center;
-            font-size: 10px;
-            color: #999;
-            border-top: 1px solid #eee;
-            padding-top: 10px;
+            padding-top: 200px;
+        }
+        .end-title {
+            font-size: 40px;
+            font-weight: bold;
+            color: #000;
+            margin-bottom: 30px;
+        }
+        .end-message {
+            font-size: 16px;
+            color: #444;
+            margin-bottom: 15px;
+        }
+        .end-lesson {
+            font-size: 14px;
+            color: #555;
+            font-style: italic;
+            margin-top: 40px;
+            padding: 0 50px;
+        }
+        .end-decoration {
+            font-size: 40px;
+            margin-top: 40px;
+        }
+        .end-footer {
+            font-size: 11px;
+            color: #888;
+            margin-top: 60px;
+        }
+        
+        /* Page Footer */
+        .page-footer {
+            position: fixed;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 8px;
+            color: #aaa;
         }
     </style>
 </head>
 <body>
     <!-- Cover Page -->
     <div class="cover-page">
-        <div>
-            <h1>{{ $title }}</h1>
-            @if($story->theme)
-                <div class="theme">{{ ucfirst($story->theme) }} • {{ ucfirst($story->style) }}</div>
-            @endif
-            <div class="author">Created by {{ $author }}</div>
-            <div class="date">{{ $generatedDate }}</div>
+        <div class="cover-decoration">📚 ✨ 📚</div>
+        <div class="cover-title">{{ $title }}</div>
+        @if($story->theme)
+            <div class="cover-theme">A {{ ucfirst($story->theme) }} Story</div>
+            <div class="cover-style">{{ ucfirst($story->style) }} Style</div>
+        @endif
+        @if(isset($story->settings['child_name']) && $story->settings['child_name'])
+            <div class="cover-starring">Starring: {{ $story->settings['child_name'] }}</div>
+        @endif
+        <div class="cover-author">Created by {{ $author }}</div>
+        <div class="cover-date">{{ $generatedDate }}</div>
+    </div>
+
+    <!-- Story Content -->
+    <div class="content-page">
+        <div class="content-title">📖 The Story</div>
+        <div class="story-text">
+            @foreach(explode("\n\n", $content) as $paragraph)
+                @if(trim($paragraph))
+                    <p>{{ trim($paragraph) }}</p>
+                @endif
+            @endforeach
         </div>
     </div>
 
@@ -126,27 +189,33 @@
     @if(count($images) > 0)
         @foreach($images as $index => $image)
             <div class="image-page">
-                <h3 style="color: #667eea; font-size: 24px; margin-bottom: 30px;">Scene {{ $index + 1 }}</h3>
-                <img src="{{ $image['src'] }}" alt="Scene {{ $index + 1 }}">
+                <div class="scene-title">🎨 Scene {{ $index + 1 }}</div>
+                <img class="scene-image" src="{{ $image['src'] }}" alt="Scene {{ $index + 1 }}">
                 @if(!empty($image['description']))
-                    <div class="image-caption">{{ $image['description'] }}</div>
+                    <div class="scene-caption">"{{ $image['description'] }}"</div>
                 @endif
             </div>
         @endforeach
     @endif
 
-    <!-- Story Content -->
-    <div class="content-page">
-        <h2>The Story</h2>
-        <div class="story-content">
-            {!! nl2br(e($content)) !!}
+    <!-- End Page -->
+    <div class="end-page">
+        <div class="end-title">The End</div>
+        <div class="end-message">Thank you for reading!</div>
+        <div class="end-message">This magical story was created especially for you.</div>
+        @if(isset($story->settings['lesson']) && $story->settings['lesson'])
+            <div class="end-lesson">"{{ $story->settings['lesson'] }}"</div>
+        @endif
+        <div class="end-decoration">🌟 📚 🌟</div>
+        <div class="end-footer">
+            Generated by AI Story Generator<br>
+            {{ $generatedDate }}
         </div>
     </div>
 
-    <!-- Footer on all pages -->
-    <div class="footer">
-        Generated by AI Story Generator • {{ $generatedDate }}
+    <!-- Footer -->
+    <div class="page-footer">
+        AI Story Generator • {{ $generatedDate }}
     </div>
 </body>
 </html>
-

@@ -1,236 +1,6 @@
-# 🎨 AI-Powered Story Generator for Children
+# AI-Powered Story Generator for Children
 
-A complete Laravel-based web application that uses AI to generate personalized, multimedia children's stories. Create engaging educational content with AI-generated text, custom illustrations, voice narration, and printable magazines.
-
-![Laravel](https://img.shields.io/badge/Laravel-12.x-red)
-![PHP](https://img.shields.io/badge/PHP-8.2+-blue)
-![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4-green)
-![License](https://img.shields.io/badge/License-MIT-yellow)
-
----
-
-## 📋 Project Summary
-
-This application allows parents, teachers, and content creators to generate unique children's stories in minutes using AI technology. The system automatically creates:
-
-- **📖 Story Text** - Personalized narratives using GPT-4
-- **🎨 Illustrations** - Custom images for each scene using DALL-E 3
-- **🎙️ Voice Narration** - Professional audio using OpenAI TTS
-- **📄 PDF Magazine** - Beautiful printable format
-- **🎬 Video** - Optional MP4 with images and narration (requires FFmpeg)
-
-### Key Features
-- ✅ **Fully Automated** - Generate complete stories in 3-4 minutes
-- ✅ **Personalization** - Add child's name, age, interests, and educational lessons
-- ✅ **12 Themes** - Adventure, Fantasy, Science, Animals, Space, and more
-- ✅ **8 Visual Styles** - Cartoon, Watercolor, 3D, Comic, and more
-- ✅ **6 Voice Options** - Different voices for narration
-- ✅ **Queue System** - Asynchronous processing with job retries
-- ✅ **User Management** - Authentication with role-based access
-- ✅ **Download Options** - PDF, MP3, MP4 formats
-
-### Technology Stack
-- **Backend**: Laravel 12.x, PHP 8.2+
-- **Frontend**: Blade Templates, Tailwind CSS, Alpine.js
-- **AI Services**: OpenAI (GPT-4, DALL-E 3, TTS)
-- **Database**: MySQL / SQLite
-- **Queue**: Database / Redis
-- **Media**: FFmpeg (optional for video)
-- **PDF**: DomPDF with base64 image encoding
-
-### Cost Per Story
-- ~$0.50-0.87 per story (OpenAI API costs)
-- No subscription fees - pay only for what you generate
-
----
-
-## 🚀 Quick Start Guide
-
-### Prerequisites
-- PHP 8.2 or higher
-- Composer
-- Node.js & NPM
-- MySQL or SQLite
-- **OpenAI API Key** with credits ([Get one here](https://platform.openai.com/api-keys))
-
-### Installation (5 Minutes)
-
-#### 1️⃣ Clone the Repository
-```bash
-git clone https://github.com/your-username/story-generator-ai.git
-cd story-generator-ai
-```
-
-#### 2️⃣ Install Dependencies
-```bash
-# Install PHP dependencies
-composer install
-
-# Install Node dependencies
-npm install
-```
-
-#### 3️⃣ Configure Environment
-```bash
-# Create .env file
-cp .env.example .env
-
-# Generate application key
-php artisan key:generate
-```
-
-**Edit `.env` file and add your OpenAI API key:**
-```env
-OPENAI_API_KEY=sk-proj-your-api-key-here
-OPENAI_REQUEST_TIMEOUT=120
-```
-
-> 💡 **Get OpenAI API Key:** Visit [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
-
-#### 4️⃣ Database Setup
-```bash
-# Run migrations
-php artisan migrate
-
-# Optional: Seed with sample data
-php artisan db:seed
-```
-
-#### 5️⃣ Create Storage Link
-```bash
-# Create symbolic link (REQUIRED for images/audio to display)
-php artisan storage:link
-
-# Clear and cache config
-php artisan config:clear
-php artisan config:cache
-```
-
-#### 6️⃣ Build Frontend
-```bash
-npm run build
-```
-
-#### 7️⃣ Start Application
-```bash
-# Terminal 1: Start Laravel server
-php artisan serve
-
-# Terminal 2: Start Queue Worker (REQUIRED!)
-php artisan queue:work
-```
-
-**🎉 Done!** Visit: `http://localhost:8000`
-
----
-
-## 📖 How to Use
-
-### Creating Your First Story
-
-1. **Register/Login** at `http://localhost:8000/register`
-
-2. **Go to Create Story** (`/stories/create`)
-
-3. **Fill in the Form:**
-   - **Story Title**: e.g., "Luna's Space Adventure"
-   - **Theme**: Choose from 12 options (Adventure, Fantasy, etc.)
-   - **Visual Style**: Choose from 8 styles (Cartoon, Watercolor, etc.)
-   - **Voice**: Select narration voice (Nova recommended for children)
-   - **Child Name** (optional): Personalizes the story
-   - **Age**: 1-18 years (adjusts complexity)
-   - **Interests** (optional): e.g., "dinosaurs, space"
-   - **Lesson** (optional): e.g., "importance of friendship"
-   - **Number of Images**: 2-10 (4 recommended)
-
-4. **Click "Create Magical Story"**
-
-5. **Wait 3-4 Minutes**
-   - Watch the queue worker terminal for progress
-   - Story will be marked as "processing"
-
-6. **View Your Story**
-   - Once complete, view at `/stories/{id}`
-   - See all images, read the story, play audio
-
-7. **Download**
-   - Download PDF magazine (printable)
-   - Download MP3 audio
-   - Download MP4 video (if FFmpeg installed)
-
-### Example Test Data
-```
-Title: Leo's Brave Adventure
-Theme: Adventure
-Style: Colorful & Vibrant
-Voice: Nova - Youthful
-Child Name: Leo
-Age: 7
-Interests: forests, treasure hunting
-Lesson: being brave and helping others
-Images: 4
-```
-
----
-
-## ⚙️ Configuration
-
-### OpenAI API Setup
-
-**Step 1: Create Account**
-- Go to [platform.openai.com](https://platform.openai.com/)
-
-**Step 2: Add Credits** (⚠️ Required)
-- Go to [Billing](https://platform.openai.com/account/billing/overview)
-- Add payment method
-- Add minimum $5-10 in credits
-
-**Step 3: Generate API Key**
-- Go to [API Keys](https://platform.openai.com/api-keys)
-- Click "Create new secret key"
-- Copy the key (starts with `sk-proj-...`)
-
-**Step 4: Add to Project**
-```env
-OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxx
-OPENAI_REQUEST_TIMEOUT=120
-```
-
-**Step 5: Clear Cache**
-```bash
-php artisan config:clear
-php artisan config:cache
-```
-
-### FFmpeg (Optional - For Video Generation)
-
-**Without FFmpeg:** Stories generate with text, images, audio, and PDF ✅
-
-**With FFmpeg:** Also generates MP4 video ✅
-
-**Windows:**
-```bash
-# Option 1: Chocolatey
-choco install ffmpeg
-
-# Option 2: Manual
-# 1. Download from: https://github.com/BtbN/FFmpeg-Builds/releases
-# 2. Extract to C:\ffmpeg
-# 3. Add C:\ffmpeg\bin to Windows PATH
-# 4. Verify: ffmpeg -version
-```
-
-**Linux:**
-```bash
-sudo apt update && sudo apt install ffmpeg
-```
-
-**macOS:**
-```bash
-brew install ffmpeg
-```
-
----
+An innovative Laravel-based web application that generates personalized, multimedia stories for children using artificial intelligence. This application creates engaging, educational content combining AI-generated text, images, voice narration, and video, with the option to print as a high-quality magazine.
 
 ## 🌟 Features
 
@@ -258,72 +28,410 @@ brew install ffmpeg
 
 ## 🔧 Requirements
 
-### Core Requirements (Must Have)
 - **PHP**: >= 8.2
 - **Composer**: Latest version
 - **Node.js**: >= 18.x
 - **NPM**: >= 9.x
-- **Database**: MySQL 8.0+ or SQLite
-- **OpenAI API Key**: **REQUIRED** - Get from [platform.openai.com](https://platform.openai.com/)
-- **OpenAI Credits**: Minimum $5-10 to start
-- **Storage**: At least 5GB free space for generated content
-- **Queue Worker**: Must be running during story generation
+- **Database**: MySQL 8.0+ or PostgreSQL 13+
+- **FFmpeg**: Required for video compilation (optional feature)
+- **OpenAI API Key**: Required for story and image generation
+- **Storage**: At least 10GB free space for generated content
 
-### Optional Requirements (Enhances Features)
-- **FFmpeg**: For video compilation (without it, videos won't be generated but everything else works)
-- **Redis**: For better queue management in production
-- **Supervisor**: For running queue workers automatically in production
+### Optional Requirements
+- Redis (for queue management)
+- Supervisor (for running queue workers in production)
 
----
+## 🚀 Installation
 
-## 📁 Project Structure
+### 1. Clone the Repository
 
-```
-story-generator-ai/
-├── app/
-│   ├── Http/Controllers/
-│   │   ├── StoryController.php      # Main story logic
-│   │   └── Controller.php            # Base controller with AuthorizesRequests
-│   ├── Jobs/
-│   │   └── GenerateStoryJob.php     # Async story generation
-│   ├── Models/
-│   │   ├── Story.php
-│   │   └── StoryElement.php
-│   ├── Policies/
-│   │   └── StoryPolicy.php          # Authorization policies
-│   └── Services/
-│       ├── StoryGenerationService.php  # GPT-4 integration
-│       ├── ImageGenerationService.php  # DALL-E 3 integration
-│       ├── TextToSpeechService.php     # OpenAI TTS
-│       ├── VideoCompilationService.php # FFmpeg video creation
-│       └── PdfMagazineService.php      # PDF generation
-├── config/
-│   └── openai.php                   # OpenAI configuration
-├── resources/
-│   └── views/
-│       ├── stories/
-│       │   ├── create.blade.php     # Story creation form
-│       │   └── show.blade.php       # Story display page
-│       └── pdf/
-│           └── magazine.blade.php   # PDF template
-└── storage/app/public/
-    ├── story-images/                # Generated images
-    ├── story-audio/                 # Audio files
-    ├── story-videos/                # Video files
-    └── story-pdfs/                  # PDF magazines
+```bash
+git clone <repository-url>
+cd story-generator-ai
 ```
 
----
+### 2. Install PHP Dependencies
 
-## 🔒 Security Notes
+```bash
+composer install
+```
 
-- Store OpenAI API key securely in `.env` (never commit to git)
-- Use `.env.example` for documentation
-- Implement rate limiting for story generation
-- Validate all user inputs
-- Use authorization policies (StoryPolicy)
+### 3. Install Node Dependencies
 
----
+```bash
+npm install
+```
+
+### 4. Environment Configuration
+
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+
+Edit `.env` file with your configuration:
+
+```env
+APP_NAME="AI Story Generator"
+APP_URL=http://localhost
+
+# Database Configuration
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=story_generator
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+
+# OpenAI Configuration (REQUIRED)
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_ORGANIZATION=your_organization_id_here
+
+# Queue Configuration (Recommended: redis for production)
+QUEUE_CONNECTION=database
+
+# Mail Configuration (for notifications)
+MAIL_MAILER=smtp
+MAIL_HOST=mailhog
+MAIL_PORT=1025
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+MAIL_ENCRYPTION=null
+MAIL_FROM_ADDRESS="noreply@storygenerator.com"
+MAIL_FROM_NAME="${APP_NAME}"
+
+# File Storage
+FILESYSTEM_DISK=public
+```
+
+### 5. Database Setup
+
+```bash
+# Create database
+php artisan migrate
+
+# (Optional) Seed with sample data
+php artisan db:seed
+```
+
+### 6. Create Storage Link
+
+```bash
+php artisan storage:link
+```
+
+### 7. Build Frontend Assets
+
+```bash
+npm run build
+
+# Or for development
+npm run dev
+```
+
+### 8. Set Up Queue Worker (Important for Story Generation)
+
+```bash
+# Development - run in separate terminal
+php artisan queue:work
+
+# Production - use Supervisor (see Production Setup below)
+```
+
+### 9. Start Development Server
+
+```bash
+php artisan serve
+```
+
+Visit: `http://localhost:8000`
+
+## ⚙️ Configuration
+
+### OpenAI API Setup
+
+1. Get your API key from [OpenAI Platform](https://platform.openai.com/)
+2. Add to `.env`:
+   ```env
+   OPENAI_API_KEY=sk-...your-key-here
+   ```
+3. Ensure you have sufficient credits for:
+   - GPT-4 (text generation)
+   - DALL-E 3 (image generation)
+   - TTS (text-to-speech)
+
+### FFmpeg Installation (Optional for Video Features)
+
+#### Windows
+```bash
+# Using Chocolatey
+choco install ffmpeg
+
+# Or download from https://ffmpeg.org/download.html
+```
+
+#### Linux (Ubuntu/Debian)
+```bash
+sudo apt update
+sudo apt install ffmpeg
+```
+
+#### macOS
+```bash
+brew install ffmpeg
+```
+
+### File Storage Configuration
+
+Create necessary directories:
+```bash
+mkdir -p storage/app/public/story-images
+mkdir -p storage/app/public/story-audio
+mkdir -p storage/app/public/story-videos
+mkdir -p storage/app/public/story-pdfs
+mkdir -p storage/app/public/uploads/photos
+```
+
+Set proper permissions:
+```bash
+# Linux/macOS
+chmod -R 775 storage bootstrap/cache
+
+# Ensure web server user has write access
+sudo chown -R www-data:www-data storage bootstrap/cache
+```
+
+## 📖 Usage
+
+### Creating Your First Story
+
+1. **Register/Login**: Create an account or log in
+2. **Navigate to Create Story**: Click "Create New Story"
+3. **Fill in Details**:
+   - Story Title
+   - Choose Theme (Adventure, Fantasy, etc.)
+   - Select Visual Style
+   - Add Child's Name (optional)
+   - Specify Age Range
+   - Select Voice for Narration
+   - Number of Images (1-10)
+4. **Upload Photo** (Optional): Upload child's photo to integrate into story
+5. **Generate**: Click "Generate Story"
+6. **Wait**: Story generation takes 2-5 minutes
+7. **View & Download**: View your story, download PDF or video
+
+### Managing Stories
+
+- **View All Stories**: Dashboard shows all your created stories
+- **Edit Story**: Modify story settings
+- **Download Options**:
+  - PDF Magazine (printable)
+  - Video File (MP4)
+  - Audio File (MP3)
+- **Share**: Share story link with others
+- **Delete**: Remove unwanted stories
+
+### User Roles
+
+#### Parent Role
+- Create unlimited stories
+- Upload child photos
+- Download and print stories
+- Manage own stories
+
+#### Teacher Role
+- Same as Parent role
+- Can create stories for classroom use
+- Track story usage statistics
+
+#### Admin Role
+- All permissions
+- Manage all users
+- View system statistics
+- Moderate content
+
+## 🎨 Features in Detail
+
+### Story Generation Process
+
+1. **Text Generation**: Uses GPT-4 to create engaging, age-appropriate narratives
+2. **Scene Description**: AI analyzes story and creates scene descriptions
+3. **Image Generation**: DALL-E 3 generates custom illustrations
+4. **Voice Synthesis**: OpenAI TTS converts text to natural speech
+5. **Video Compilation**: FFmpeg combines images and audio
+6. **PDF Creation**: DomPDF generates printable magazine
+
+### Available Themes
+
+- Adventure
+- Fantasy
+- Science & Learning
+- Friendship
+- Animals
+- Space Exploration
+- Nature
+- Magic & Wizards
+- Pirates
+- Dinosaurs
+- Underwater World
+- Fairy Tale
+
+### Visual Styles
+
+- Colorful & Vibrant
+- Cartoon Style
+- Watercolor Art
+- Digital Art
+- Classic Storybook
+- Comic Book
+- 3D Rendered
+- Minimalist
+
+### Voice Options
+
+- **Alloy**: Neutral tone
+- **Echo**: Warm voice
+- **Fable**: British accent
+- **Onyx**: Deep voice
+- **Nova**: Youthful (recommended for children)
+- **Shimmer**: Bright and cheerful
+
+## 🔌 API Services
+
+### Story Generation Service
+```php
+use App\Services\StoryGenerationService;
+
+$service = app(StoryGenerationService::class);
+$story = $service->generateStory($theme, $style, $params);
+```
+
+### Image Generation Service
+```php
+use App\Services\ImageGenerationService;
+
+$service = app(ImageGenerationService::class);
+$imagePath = $service->generateImage($description, $style);
+```
+
+### Text-to-Speech Service
+```php
+use App\Services\TextToSpeechService;
+
+$service = app(TextToSpeechService::class);
+$audioPath = $service->convertTextToSpeech($text, $voice);
+```
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+#### 1. "OpenAI API Error"
+- Verify API key in `.env`
+- Check OpenAI account credits
+- Ensure API key has proper permissions
+
+#### 2. "Image Generation Failed"
+- Check OpenAI DALL-E 3 access
+- Verify sufficient API credits
+- Check image size limits
+
+#### 3. "Video Compilation Error"
+- Ensure FFmpeg is installed: `ffmpeg -version`
+- Check file permissions in storage directory
+- Verify sufficient disk space
+
+#### 4. "Queue Jobs Not Processing"
+- Start queue worker: `php artisan queue:work`
+- Check queue connection in `.env`
+- Verify database queue table exists
+
+#### 5. "Storage Link Error"
+- Run: `php artisan storage:link`
+- Check `public/storage` symlink exists
+- Verify file permissions
+
+### Logging
+
+Check logs for errors:
+```bash
+tail -f storage/logs/laravel.log
+```
+
+### Clear Cache
+
+If experiencing issues:
+```bash
+php artisan cache:clear
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
+```
+
+## 🚀 Production Setup
+
+### 1. Optimize Application
+
+```bash
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+npm run build
+```
+
+### 2. Set Up Supervisor for Queue
+
+Create `/etc/supervisor/conf.d/story-generator-worker.conf`:
+
+```ini
+[program:story-generator-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /path/to/your/app/artisan queue:work --sleep=3 --tries=3 --max-time=3600
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+user=www-data
+numprocs=4
+redirect_stderr=true
+stdout_logfile=/path/to/your/app/storage/logs/worker.log
+stopwaitsecs=3600
+```
+
+Reload Supervisor:
+```bash
+sudo supervisorctl reread
+sudo supervisorctl update
+sudo supervisorctl start story-generator-worker:*
+```
+
+### 3. Set Up Cron for Scheduled Tasks
+
+Add to crontab:
+```bash
+* * * * * cd /path/to/your/app && php artisan schedule:run >> /dev/null 2>&1
+```
+
+### 4. Secure Environment
+
+- Set `APP_DEBUG=false`
+- Set `APP_ENV=production`
+- Use HTTPS
+- Implement rate limiting
+- Regular backups
+
+## 📊 Cost Estimation
+
+### OpenAI API Costs (Approximate)
+
+Per Story Generation:
+- **GPT-4**: ~$0.10 - $0.30 (depending on story length)
+- **DALL-E 3**: ~$0.04 - $0.16 (per image, 1-10 images)
+- **TTS**: ~$0.015 per 1000 characters
+
+**Average Cost per Story**: $0.20 - $0.60
+
+Monthly costs depend on usage volume. Budget accordingly!
 
 ## 📝 License
 
@@ -331,42 +439,18 @@ This project is licensed under the MIT License.
 
 ## 🤝 Contributing
 
-Contributions welcome! Please:
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Open a Pull Request
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📧 Support
 
-- **Issues:** Open an issue on GitHub
-- **Documentation:** Check this README
-- **Logs:** Check `storage/logs/laravel.log`
+For support, please contact: support@storygenerator.com
 
 ## 🙏 Acknowledgments
 
-- [OpenAI](https://openai.com/) - GPT-4, DALL-E 3, and TTS APIs
-- [Laravel](https://laravel.com/) - PHP Framework
-- [DomPDF](https://github.com/barryvdh/laravel-dompdf) - PDF Generation
-- [Tailwind CSS](https://tailwindcss.com/) - UI Styling
-
----
-
-## 📌 Important Notes
-
-- ⚠️ **Queue worker must run continuously** during story generation
-- ⚠️ **OpenAI API key and credits are required** - no free tier
-- ⚠️ **Storage link is critical** - run `php artisan storage:link`
-- ⚠️ **Clear config after .env changes** - run `php artisan config:clear`
-- ✅ **Video is optional** - app works fine without FFmpeg
-- ✅ **PDF uses base64 images** - no external image dependencies
-- ✅ **Job retries enabled** - failed jobs retry automatically 3 times
+- OpenAI for GPT-4, DALL-E 3, and TTS APIs
+- Laravel Framework
+- All open-source contributors
 
 ---
 
 **Built with ❤️ for children's education and creativity**
-
-**Version:** 1.0.0  
-**Last Updated:** November 2025  
-**Status:** ✅ Production Ready

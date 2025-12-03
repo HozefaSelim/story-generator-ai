@@ -17,15 +17,17 @@ class TextToSpeechService
     /**
      * Convert text to speech using OpenAI's TTS
      */
-    public function convertTextToSpeech(string $text, string $voice = 'alloy'): string
+    public function convertTextToSpeech(string $text, string $voice = 'alloy', string $agent = 'openai_tts'): string
     {
         // Available voices: alloy, echo, fable, onyx, nova, shimmer
         
-        $response = Http::timeout(120)->withHeaders([
+        $model = $this->getModelFromAgent($agent);
+        
+        $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . $this->apiKey,
             'Content-Type' => 'application/json',
         ])->post('https://api.openai.com/v1/audio/speech', [
-            'model' => 'tts-1',
+            'model' => $model,
             'input' => $text,
             'voice' => $voice,
             'response_format' => 'mp3',
@@ -39,23 +41,32 @@ class TextToSpeechService
 
         throw new \Exception('Failed to generate speech: ' . $response->body());
     }
+    
+    /**
+     * Get model name from agent configuration
+     */
+    protected function getModelFromAgent(string $agent): string
+    {
+        $agentConfig = config("services.ai_agents.voice.{$agent}");
+        return $agentConfig['model'] ?? 'tts-1';
+    }
 
     /**
      * Convert story to speech with multiple segments
      */
-    public function convertStoryToSpeech(string $storyContent, string $voice = 'nova'): string
+    public function convertStoryToSpeech(string $storyContent, string $voice = 'nova', string $agent = 'openai_tts'): string
     {
         // Split story into manageable chunks if it's too long
         $chunks = $this->splitTextIntoChunks($storyContent);
         
         if (count($chunks) === 1) {
-            return $this->convertTextToSpeech($storyContent, $voice);
+            return $this->convertTextToSpeech($storyContent, $voice, $agent);
         }
 
         // Generate audio for each chunk and merge them
         $audioFiles = [];
         foreach ($chunks as $index => $chunk) {
-            $audioFiles[] = $this->convertTextToSpeech($chunk, $voice);
+            $audioFiles[] = $this->convertTextToSpeech($chunk, $voice, $agent);
         }
 
         // Merge audio files
