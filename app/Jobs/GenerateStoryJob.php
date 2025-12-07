@@ -41,17 +41,16 @@ class GenerateStoryJob implements ShouldQueue
         TextToSpeechService $ttsService,
         VideoCompilationService $videoService,
         PdfMagazineService $pdfService
-    ): void
-    {
+    ): void {
         $story = Story::findOrFail($this->storyId);
-        
+
         try {
             $story->update(['status' => 'processing']);
             $settings = $story->settings ?? [];
 
             // Get selected agents from settings
-            $textAgent = $settings['text_agent'] ?? 'openai_gpt4';
-            $imageAgent = $settings['image_agent'] ?? 'dalle3';
+            $textAgent = $settings['text_agent'] ?? 'gemini_flash';
+            $imageAgent = $settings['image_agent'] ?? 'gemini_imagen';
             $voiceAgent = $settings['voice_agent'] ?? 'openai_tts';
 
             Log::info("Generating story {$story->id} with agents: text={$textAgent}, image={$imageAgent}, voice={$voiceAgent}");

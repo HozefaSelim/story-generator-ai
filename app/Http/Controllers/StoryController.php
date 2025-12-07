@@ -56,7 +56,7 @@ class StoryController extends Controller
         $themes = $this->getAvailableThemes();
         $styles = $this->getAvailableStyles();
         $voices = $this->ttsService->getAvailableVoices();
-        
+
         // Get available AI agents
         $textAgents = config('services.ai_agents.text', []);
         $imageAgents = config('services.ai_agents.image', []);
@@ -69,9 +69,15 @@ class StoryController extends Controller
         $previousLessons = $userStories->pluck('settings.lesson')->filter()->unique()->values();
 
         return view('stories.create', compact(
-            'themes', 'styles', 'voices', 
-            'textAgents', 'imageAgents', 'voiceAgents',
-            'previousChildNames', 'previousInterests', 'previousLessons'
+            'themes',
+            'styles',
+            'voices',
+            'textAgents',
+            'imageAgents',
+            'voiceAgents',
+            'previousChildNames',
+            'previousInterests',
+            'previousLessons'
         ));
     }
 
@@ -113,8 +119,8 @@ class StoryController extends Controller
                     'lesson' => $request->lesson,
                     'voice' => $request->voice,
                     'num_images' => $request->num_images ?? 4,
-                    'text_agent' => $request->text_agent ?? 'openai_gpt4',
-                    'image_agent' => $request->image_agent ?? 'dalle3',
+                    'text_agent' => $request->text_agent ?? 'gemini_flash',
+                    'image_agent' => $request->image_agent ?? 'gemini_imagen',
                     'voice_agent' => $request->voice_agent ?? 'openai_tts',
                 ],
             ]);

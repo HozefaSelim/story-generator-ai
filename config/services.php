@@ -50,62 +50,55 @@ return [
     // AI Agents Configuration
     'ai_agents' => [
         'text' => [
+            'gemini_flash' => [
+                'name' => 'Gemini 2.0 Flash',
+                'description' => 'Google AI - FREE!',
+                'model' => 'gemini-2.0-flash-exp',
+                'icon' => '💎',
+                'provider' => 'gemini',
+            ],
             'openai_gpt4' => [
                 'name' => 'OpenAI GPT-4',
-                'description' => 'Best quality storytelling',
+                'description' => 'Best quality (PAID)',
                 'model' => 'gpt-4',
                 'icon' => '🤖',
                 'provider' => 'openai',
             ],
             'openai_gpt4o' => [
                 'name' => 'OpenAI GPT-4o',
-                'description' => 'Fast & multimodal',
+                'description' => 'Fast & multimodal (PAID)',
                 'model' => 'gpt-4o',
                 'icon' => '🚀',
                 'provider' => 'openai',
             ],
-            'gemini_flash' => [
-                'name' => 'Gemini 1.5 Flash',
-                'description' => 'Google AI - Fast',
-                'model' => 'gemini-1.5-flash',
-                'icon' => '💎',
-                'provider' => 'gemini',
-            ],
         ],
         'image' => [
+            'gemini_imagen' => [
+                'name' => 'Nano Banana (Gemini)',
+                'description' => 'Google AI - FREE!',
+                'model' => 'gemini-2.0-flash-exp',
+                'icon' => '🍌',
+                'provider' => 'gemini',
+            ],
             'dalle3' => [
                 'name' => 'DALL-E 3',
-                'description' => 'OpenAI - Best quality',
+                'description' => 'OpenAI - Best quality (PAID)',
                 'model' => 'dall-e-3',
                 'icon' => '🎨',
                 'provider' => 'openai',
-            ],
-            'stability_core' => [
-                'name' => 'Stable Image Core',
-                'description' => 'Stability AI - Fast',
-                'model' => 'core',
-                'icon' => '🌟',
-                'provider' => 'stability',
-            ],
-            'stability_sd3' => [
-                'name' => 'Stable Diffusion 3',
-                'description' => 'Stability AI - HD',
-                'model' => 'sd3-large',
-                'icon' => '✨',
-                'provider' => 'stability',
             ],
         ],
         'voice' => [
             'openai_tts' => [
                 'name' => 'OpenAI TTS',
-                'description' => 'Standard quality',
+                'description' => 'Standard quality (PAID)',
                 'model' => 'tts-1',
                 'icon' => '🎙️',
                 'provider' => 'openai',
             ],
             'openai_tts_hd' => [
                 'name' => 'OpenAI TTS HD',
-                'description' => 'Higher quality audio',
+                'description' => 'Higher quality (PAID)',
                 'model' => 'tts-1-hd',
                 'icon' => '🎵',
                 'provider' => 'openai',

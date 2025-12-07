@@ -53,21 +53,28 @@ class ImageGenerationService
     }
 
     /**
-     * Generate image with Google Gemini Imagen
+     * Generate image with Google Gemini (Nano Banana) - FREE!
+     * Uses Gemini 2.0 Flash's native image generation capability
      */
     protected function generateWithGemini(string $prompt, string $model): string
     {
         $apiKey = config('services.gemini.api_key');
-        
-        $response = Http::withHeaders([
+
+        // Use Gemini 2.0 Flash with image generation capability
+        $response = Http::timeout(120)->withHeaders([
             'Content-Type' => 'application/json',
-        ])->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateImages?key={$apiKey}", [
-            'prompt' => $prompt,
-            'number_of_images' => 1,
-            'aspect_ratio' => '1:1',
-            'safety_filter_level' => 'BLOCK_LOW_AND_ABOVE',
-            'person_generation' => 'ALLOW_ADULT',
-        ]);
+        ])->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}", [
+                    'contents' => [
+                        [
+                            'parts' => [
+                                ['text' => "Generate a colorful, child-friendly illustration: {$prompt}"]
+                            ]
+                        ]
+                    ],
+                    'generationConfig' => [
+                        'responseModalities' => ['TEXT', 'IMAGE'],
+                    ],
+                ]);
 
         if (!$response->successful()) {
             Log::error('Gemini image generation failed: ' . $response->body());
@@ -75,14 +82,19 @@ class ImageGenerationService
         }
 
         $data = $response->json();
-        
-        // Gemini returns base64 encoded images
-        if (isset($data['generatedImages'][0]['image']['imageBytes'])) {
-            $imageContent = base64_decode($data['generatedImages'][0]['image']['imageBytes']);
-            return $this->saveImageContent($imageContent);
+
+        // Check for inline image data in the response
+        if (isset($data['candidates'][0]['content']['parts'])) {
+            foreach ($data['candidates'][0]['content']['parts'] as $part) {
+                if (isset($part['inlineData']['mimeType']) && isset($part['inlineData']['data'])) {
+                    $imageContent = base64_decode($part['inlineData']['data']);
+                    return $this->saveImageContent($imageContent);
+                }
+            }
         }
 
-        throw new \Exception('No image data received from Gemini');
+        Log::error('Gemini response structure: ' . json_encode($data));
+        throw new \Exception('No image data received from Gemini. The model may not support image generation.');
     }
 
     /**
@@ -91,7 +103,7 @@ class ImageGenerationService
     protected function generateWithStability(string $prompt, string $model): string
     {
         $apiKey = config('services.stability.api_key');
-        
+
         // Determine the endpoint based on model
         $endpoint = match ($model) {
             'sd3-large', 'sd3-medium', 'sd3-large-turbo' => 'https://api.stability.ai/v2beta/stable-image/generate/sd3',
@@ -170,7 +182,7 @@ class ImageGenerationService
     {
         $prefix = "Create a colorful, vibrant, child-friendly illustration in a storybook style. ";
         $suffix = " The image should be appropriate for children, cheerful, and engaging.";
-        
+
         return $prefix . $description . $suffix;
     }
 

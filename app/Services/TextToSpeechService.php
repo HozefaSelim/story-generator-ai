@@ -20,18 +20,18 @@ class TextToSpeechService
     public function convertTextToSpeech(string $text, string $voice = 'alloy', string $agent = 'openai_tts'): string
     {
         // Available voices: alloy, echo, fable, onyx, nova, shimmer
-        
+
         $model = $this->getModelFromAgent($agent);
-        
-        $response = Http::withHeaders([
+
+        $response = Http::timeout(120)->withHeaders([
             'Authorization' => 'Bearer ' . $this->apiKey,
             'Content-Type' => 'application/json',
         ])->post('https://api.openai.com/v1/audio/speech', [
-            'model' => $model,
-            'input' => $text,
-            'voice' => $voice,
-            'response_format' => 'mp3',
-        ]);
+                    'model' => $model,
+                    'input' => $text,
+                    'voice' => $voice,
+                    'response_format' => 'mp3',
+                ]);
 
         if ($response->successful()) {
             $fileName = 'story-audio/' . uniqid() . '.mp3';
@@ -41,7 +41,7 @@ class TextToSpeechService
 
         throw new \Exception('Failed to generate speech: ' . $response->body());
     }
-    
+
     /**
      * Get model name from agent configuration
      */
@@ -58,7 +58,7 @@ class TextToSpeechService
     {
         // Split story into manageable chunks if it's too long
         $chunks = $this->splitTextIntoChunks($storyContent);
-        
+
         if (count($chunks) === 1) {
             return $this->convertTextToSpeech($storyContent, $voice, $agent);
         }
@@ -121,13 +121,13 @@ class TextToSpeechService
         // This is a simplified version. In production, you'd use FFmpeg or similar
         // For now, we'll just return the first file
         // TODO: Implement proper audio merging with FFmpeg
-        
+
         $mergedFileName = 'story-audio/' . uniqid() . '_merged.mp3';
-        
+
         // Placeholder - in production, use FFmpeg to merge audio files
         // For now, just copy the first file as a placeholder
         Storage::disk('public')->copy($audioFiles[0], $mergedFileName);
-        
+
         return $mergedFileName;
     }
 
