@@ -332,6 +332,60 @@ class StoryController extends Controller
     }
 
     /**
+     * Regenerate video for existing story
+     */
+    public function regenerateVideo(Story $story)
+    {
+        $this->authorize('update', $story);
+
+        try {
+            // Check if story has the required elements
+            $story->load('elements');
+            $images = $story->elements->where('type', 'image')->pluck('file_path')->filter()->toArray();
+            
+            if (empty($images)) {
+                return back()->with('error', 'No images available to create video.');
+            }
+
+            if (!$story->voice_file_path) {
+                return back()->with('error', 'No audio narration available to create video.');
+            }
+
+            // Delete old video if exists
+            if ($story->video_file_path) {
+                \Storage::disk('public')->delete($story->video_file_path);
+                
+                // Delete old video element
+                StoryElement::where('story_id', $story->id)
+                    ->where('type', 'video')
+                    ->delete();
+            }
+
+            // Generate new video
+            $videoPath = $this->videoService->compileStoryVideo(
+                $images,
+                $story->voice_file_path,
+                $story->content
+            );
+
+            $story->update(['video_file_path' => $videoPath]);
+
+            // Create video element
+            StoryElement::create([
+                'story_id' => $story->id,
+                'type' => 'video',
+                'file_path' => $videoPath,
+                'order' => 1000,
+            ]);
+
+            return back()->with('success', 'Video generated successfully! 🎬');
+        } catch (\Exception $e) {
+            Log::error('Video regeneration failed: ' . $e->getMessage());
+            return back()->with('error', 'Failed to generate video: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Download story video
      */
     public function downloadVideo(Story $story)

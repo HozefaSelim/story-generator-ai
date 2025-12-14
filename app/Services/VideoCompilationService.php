@@ -7,6 +7,111 @@ use Illuminate\Support\Facades\Log;
 
 class VideoCompilationService
 {
+    protected ?string $ffmpegPath = null;
+    protected ?string $ffprobePath = null;
+
+    public function __construct()
+    {
+        $this->ffmpegPath = $this->findFFmpegPath();
+        $this->ffprobePath = $this->findFFprobePath();
+        
+        Log::info('VideoCompilationService initialized', [
+            'ffmpeg_path' => $this->ffmpegPath,
+            'ffprobe_path' => $this->ffprobePath,
+            'ffmpeg_exists' => $this->ffmpegPath ? file_exists($this->ffmpegPath) : false,
+        ]);
+    }
+
+    /**
+     * Find FFmpeg executable path
+     */
+    protected function findFFmpegPath(): ?string
+    {
+        // Get user profile path from environment
+        $userProfile = getenv('USERPROFILE') ?: getenv('HOME');
+        
+        // Check common Windows installation paths
+        $possiblePaths = [
+            // WinGet installation path (most common on Windows 11)
+            $userProfile . '\\AppData\\Local\\Microsoft\\WinGet\\Links\\ffmpeg.exe',
+            'C:\\Users\\hothe\\AppData\\Local\\Microsoft\\WinGet\\Links\\ffmpeg.exe',
+            'C:\\Users\\' . get_current_user() . '\\AppData\\Local\\Microsoft\\WinGet\\Links\\ffmpeg.exe',
+            'C:\\ffmpeg\\bin\\ffmpeg.exe',
+            'C:\\ffmpeg\\ffmpeg.exe',
+            'C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe',
+            'C:\\Program Files (x86)\\ffmpeg\\bin\\ffmpeg.exe',
+            '/usr/bin/ffmpeg',
+            '/usr/local/bin/ffmpeg',
+        ];
+
+        foreach ($possiblePaths as $path) {
+            if ($path && file_exists($path)) {
+                Log::info('Found FFmpeg at: ' . $path);
+                return $path;
+            }
+        }
+
+        // Try to find via where command on Windows
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            exec('where ffmpeg 2>&1', $output, $returnCode);
+            if ($returnCode === 0 && !empty($output[0]) && file_exists(trim($output[0]))) {
+                Log::info('Found FFmpeg via where command: ' . trim($output[0]));
+                return trim($output[0]);
+            }
+        }
+
+        Log::warning('FFmpeg not found in any known location');
+        // Fallback: just use 'ffmpeg' and hope it's in PATH
+        return null;
+    }
+
+    /**
+     * Find FFprobe executable path
+     */
+    protected function findFFprobePath(): ?string
+    {
+        // Get user profile path from environment
+        $userProfile = getenv('USERPROFILE') ?: getenv('HOME');
+        
+        // Check common Windows installation paths
+        $possiblePaths = [
+            // WinGet installation path (most common on Windows 11)
+            $userProfile . '\\AppData\\Local\\Microsoft\\WinGet\\Links\\ffprobe.exe',
+            'C:\\Users\\hothe\\AppData\\Local\\Microsoft\\WinGet\\Links\\ffprobe.exe',
+            'C:\\Users\\' . get_current_user() . '\\AppData\\Local\\Microsoft\\WinGet\\Links\\ffprobe.exe',
+            'C:\\ffmpeg\\bin\\ffprobe.exe',
+            'C:\\ffmpeg\\ffprobe.exe',
+            'C:\\Program Files\\ffmpeg\\bin\\ffprobe.exe',
+            'C:\\Program Files (x86)\\ffmpeg\\bin\\ffprobe.exe',
+            '/usr/bin/ffprobe',
+            '/usr/local/bin/ffprobe',
+        ];
+
+        foreach ($possiblePaths as $path) {
+            if ($path && file_exists($path)) {
+                return $path;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Get FFmpeg command
+     */
+    protected function getFFmpegCommand(): string
+    {
+        return $this->ffmpegPath ? escapeshellarg($this->ffmpegPath) : 'ffmpeg';
+    }
+
+    /**
+     * Get FFprobe command
+     */
+    protected function getFFprobeCommand(): string
+    {
+        return $this->ffprobePath ? escapeshellarg($this->ffprobePath) : 'ffprobe';
+    }
+
     /**
      * Compile story elements into a video
      * 
@@ -24,11 +129,18 @@ class VideoCompilationService
         }
 
         try {
+            // Get audio duration to calculate image display time
+            $audioDuration = $this->getAudioDuration($audioPath);
+            $numImages = count($images);
+            $imageDuration = $audioDuration > 0 ? ($audioDuration / $numImages) : 5;
+            
+            Log::info("Video compilation: audio={$audioDuration}s, images={$numImages}, duration per image={$imageDuration}s");
+            
             // Prepare images with text overlays
             $preparedImages = $this->prepareImagesWithText($images, $storyText, $tempDir);
             
-            // Create video from images
-            $imageVideoPath = $this->createVideoFromImages($preparedImages, $tempDir);
+            // Create video from images with calculated duration
+            $imageVideoPath = $this->createVideoFromImages($preparedImages, $tempDir, $imageDuration);
             
             // Add audio to video
             $finalVideoPath = $this->addAudioToVideo($imageVideoPath, $audioPath, $videoFileName);
@@ -42,6 +154,28 @@ class VideoCompilationService
             $this->cleanupTempDir($tempDir);
             throw $e;
         }
+    }
+
+    /**
+     * Get audio file duration in seconds
+     */
+    protected function getAudioDuration(string $audioPath): float
+    {
+        $fullPath = Storage::disk('public')->path($audioPath);
+        
+        $ffprobe = $this->getFFprobeCommand();
+        $command = sprintf(
+            '%s -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 %s 2>&1',
+            $ffprobe,
+            escapeshellarg($fullPath)
+        );
+
+        exec($command, $output, $returnCode);
+        
+        $duration = isset($output[0]) ? (float) trim($output[0]) : 0.0;
+        Log::info("Audio duration detected: {$duration} seconds");
+        
+        return $duration;
     }
 
     /**
@@ -74,7 +208,7 @@ class VideoCompilationService
     /**
      * Create video from images
      */
-    protected function createVideoFromImages(array $images, string $tempDir): string
+    protected function createVideoFromImages(array $images, string $tempDir, float $imageDuration = 5.0): string
     {
         $outputPath = $tempDir . '/images_video.mp4';
         
@@ -87,18 +221,22 @@ class VideoCompilationService
         $concatContent = '';
         
         foreach ($images as $image) {
-            // Each image shows for 5 seconds
+            // Each image shows for calculated duration based on audio length
             $concatContent .= "file '" . $image . "'\n";
-            $concatContent .= "duration 5\n";
+            $concatContent .= "duration " . number_format($imageDuration, 2, '.', '') . "\n";
         }
         // Add last image again to prevent truncation
         $concatContent .= "file '" . end($images) . "'\n";
         
         file_put_contents($concatFile, $concatContent);
+        
+        Log::info("Concat file created with duration {$imageDuration}s per image");
 
         // Run FFmpeg command
+        $ffmpeg = $this->getFFmpegCommand();
         $command = sprintf(
-            'ffmpeg -f concat -safe 0 -i %s -vsync vfr -pix_fmt yuv420p %s 2>&1',
+            '%s -f concat -safe 0 -i %s -vsync vfr -pix_fmt yuv420p %s 2>&1',
+            $ffmpeg,
             escapeshellarg($concatFile),
             escapeshellarg($outputPath)
         );
@@ -127,8 +265,11 @@ class VideoCompilationService
             mkdir($outputDir, 0755, true);
         }
 
+        $ffmpeg = $this->getFFmpegCommand();
+        // Use audio duration as the primary timeline (-shortest removed to keep full audio)
         $command = sprintf(
-            'ffmpeg -i %s -i %s -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 -shortest %s 2>&1',
+            '%s -i %s -i %s -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 %s 2>&1',
+            $ffmpeg,
             escapeshellarg($videoPath),
             escapeshellarg($fullAudioPath),
             escapeshellarg($outputPath)
@@ -152,8 +293,10 @@ class VideoCompilationService
         // Escape text for FFmpeg drawtext filter
         $escapedText = str_replace([':', "'", '\\'], ['\\:', "\\'", '\\\\'], $text);
         
+        $ffmpeg = $this->getFFmpegCommand();
         $command = sprintf(
-            'ffmpeg -i %s -vf "drawtext=text=\'%s\':fontfile=/Windows/Fonts/arial.ttf:fontsize=24:fontcolor=white:x=(w-text_w)/2:y=h-100:borderw=2:bordercolor=black" %s 2>&1',
+            '%s -i %s -vf "drawtext=text=\'%s\':fontfile=/Windows/Fonts/arial.ttf:fontsize=24:fontcolor=white:x=(w-text_w)/2:y=h-100:borderw=2:bordercolor=black" %s 2>&1',
+            $ffmpeg,
             escapeshellarg($imagePath),
             $escapedText,
             escapeshellarg($outputPath)
@@ -189,6 +332,10 @@ class VideoCompilationService
      */
     protected function isFFmpegAvailable(): bool
     {
+        if ($this->ffmpegPath && file_exists($this->ffmpegPath)) {
+            return true;
+        }
+
         exec('ffmpeg -version 2>&1', $output, $returnCode);
         return $returnCode === 0;
     }
@@ -216,8 +363,10 @@ class VideoCompilationService
     {
         $fullPath = Storage::disk('public')->path($videoPath);
         
+        $ffprobe = $this->getFFprobeCommand();
         $command = sprintf(
-            'ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 %s',
+            '%s -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 %s',
+            $ffprobe,
             escapeshellarg($fullPath)
         );
 

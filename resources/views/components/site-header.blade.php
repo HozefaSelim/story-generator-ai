@@ -19,24 +19,58 @@
                     </a>
                     
                     <!-- User Dropdown -->
-                    <div class="relative group">
-                        <button class="text-white/90 hover:text-white font-medium transition-colors">
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open" @click.outside="open = false" class="flex items-center gap-2 text-white/90 hover:text-white font-medium transition-colors">
                             {{ Auth::user()->name }}
+                            <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
                         </button>
                         
-                        <div class="absolute right-0 mt-2 w-48 rounded-2xl bg-white/10 backdrop-blur-lg border border-white/20 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-                            <a href="{{ route('dashboard') }}" class="block px-4 py-3 text-white hover:bg-white/10 rounded-t-2xl transition-colors">
-                                Dashboard
-                            </a>
-                            <a href="{{ route('profile.edit') }}" class="block px-4 py-3 text-white hover:bg-white/10 transition-colors">
-                                Profile
-                            </a>
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <button type="submit" class="w-full text-left px-4 py-3 text-white hover:bg-white/10 rounded-b-2xl transition-colors">
-                                    Log Out
-                                </button>
-                            </form>
+                        <div x-show="open" 
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 translate-y-2"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 translate-y-2"
+                             class="absolute right-0 mt-3 w-56 rounded-xl border border-cyan-500/30 shadow-2xl shadow-black/80 overflow-hidden"
+                             style="display: none; background: #0f172a;">
+                            <div class="px-4 py-3 border-b border-slate-700/50" style="background: #1e293b;">
+                                <p class="text-sm font-semibold text-white">{{ Auth::user()->name }}</p>
+                                <p class="text-xs text-cyan-400 truncate">{{ Auth::user()->email }}</p>
+                            </div>
+                            <div class="py-2" style="background: #0f172a;">
+                                <a href="{{ route('dashboard') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-200 hover:text-cyan-300 hover:bg-cyan-500/10 transition-colors">
+                                    <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                                    </svg>
+                                    Dashboard
+                                </a>
+                                <a href="{{ route('stories.index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-200 hover:text-cyan-300 hover:bg-cyan-500/10 transition-colors">
+                                    <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                                    </svg>
+                                    My Stories
+                                </a>
+                                <a href="{{ route('profile.edit') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-200 hover:text-cyan-300 hover:bg-cyan-500/10 transition-colors">
+                                    <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                    </svg>
+                                    Profile
+                                </a>
+                            </div>
+                            <div class="border-t border-slate-700/50 py-2" style="background: #0f172a;">
+                                <form method="POST" action="{{ route('logout') }}">
+                                    @csrf
+                                    <button type="submit" class="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                        </svg>
+                                        Log Out
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                     
